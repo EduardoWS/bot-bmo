@@ -52,4 +52,4 @@ BMO roda um dado com um número de lados escolhido''',
     await ctx.send(embed = emb)
 
 
-client.run('ODM2MDQyMTU0NTk3NDE3MDEw.YIYO7g.RqAb9ChXSFzCnYnXoDtE5MXyIXU')
+client.run('token')
