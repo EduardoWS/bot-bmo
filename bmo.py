@@ -2,6 +2,20 @@ import discord
 from discord.ext import commands
 import random
 from time import sleep
+import json
+import os
+
+if os.path.exists(os.getcwd() + "/config.json"):
+    with open("./config.json") as f:
+        configData = json.load(f)
+else:
+    configTemplate = {"Token": "", "Prefix": "!"}
+
+    with open(os.getcwd() + "/config.json", "w+") as f:
+        json.dump(configTemplate, f)
+
+token = configData["Token"]
+prefix = configData["Prefix"]
 
 intents = discord.Intents.default()
 intents.members = True
@@ -35,7 +49,7 @@ async def ajuda(ctx):
     emb = discord.Embed(
         title = 'Meus comandos:',
         description = '''
-        `!bom dia` 
+        `!oi` 
 BMO diz Bom dia
 
 `!d [número]` 
@@ -51,5 +65,52 @@ BMO roda um dado com um número de lados escolhido''',
     emb.set_image(url='https://media.giphy.com/media/10bxTLrpJNS0PC/giphy.gif')
     await ctx.send(embed = emb)
 
+@client.command()
+async def ping(ctx):
+    latency = round(client.latency * 1000, 1)
+    await ctx.send(f'Pong! {latency} ms')
 
-client.run('token')
+@client.command()
+async def imposto(ctx, mention):
+    await ctx.send(f'O imperador disse para você pagar os impostos! {mention}')
+
+
+@client.command()
+@commands.has_permissions(ban_members=True)
+async def banir(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        await member.ban(reason=reason)
+        channel = client.get_channel(831197248884703283)
+        await channel.send(f'{member} foi banido!')
+
+@client.command()
+@commands.has_permissions(kick_members=True)
+async def kickar(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        await member.kick(reason=reason)
+        channel = client.get_channel(831197248884703283)
+        await channel.send(f'{member.mention} foi kickado!')
+
+@client.command()
+@commands.has_permissions(ban_members=True)
+async def unban(ctx, *, member):
+    bannedUsers = await ctx.guild.bans()
+    name, discrimator = member.split('#')
+
+    for ban in bannedUsers:
+        user = ban.user
+
+        if(user.name, user.discrimator) == (name, discrimator):
+            await ctx.guild.unban(user)
+            await ctx.send(f'{user.mention} foi desbanido')
+            return
+
+
+
+
+
+
+
+client.run('ODM2MDQyMTU0NTk3NDE3MDEw.YIYO7g.clX4U1smmGW3yyrfyaGED3nNLxU')
