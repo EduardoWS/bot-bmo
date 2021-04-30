@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import random
+import time
 from time import sleep
 import json
 import os
@@ -21,22 +22,29 @@ prefix = configData["Prefix"]
 intents = discord.Intents.default()
 intents.members = True
 client = commands.Bot(command_prefix = '!', case_insensitive = True, intents = intents)
+client.remove_command('help')
+
+
 
 @client.event
 async def on_ready():
     print('BMO está ON !!!')
-
-
-
+    await client.change_presence(activity=discord.Game(name='os outros pela janela'))
 
 @client.command()
-async def oi(ctx):
-    channel = ctx.channel
-    if channel.name == '🤖┃bots':
-        await ctx.send(f'Bom dia, {ctx.author.mention}!') 
-    else:
-        await ctx.send('Canal errado, bobinho(a)!')
+@commands.has_permissions(administrator=True)
+async def activity(ctx, *, activity):
+    await client.change_presence(activity=discord.Game(name=activity))
+    await ctx.send(f'Status atualizado para: `Jogando {activity}`')
 
+
+
+
+
+
+
+
+# VV ====================== COMANDOS EXCLUSIVOS DA CATEGORIA RPG ====================== VV
 
 @client.command()
 async def d(ctx, numero):
@@ -65,7 +73,7 @@ BMO roda um dado com um número de lados escolhido
 
     emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
 
-    emb.set_image(url='https://media.giphy.com/media/10bxTLrpJNS0PC/giphy.gif')
+    """ emb.set_image(url='https://media.giphy.com/media/10bxTLrpJNS0PC/giphy.gif') """
     channel = ctx.channel
     if channel.name == '🎲┃comandos':
         await ctx.send(embed = emb)
@@ -76,15 +84,37 @@ BMO roda um dado com um número de lados escolhido
 
 
 
+
+
+
+
+
+
+
+# VV ====================== COMANDO AJUDA EMBED ====================== VV
+
 @client.command()
 async def ajuda(ctx):
     canal = client.get_channel(831196504618172437)
     canal2 = client.get_channel(835228205211189298)
     emb = discord.Embed(
-        title = 'Meus comandos:',
-        description = f'''
-        `!oi` 
+title = 'COMANDOS GERAIS:',
+description = f'''
+
+`!oi` 
 BMO diz Bom dia
+
+`!ping`
+BMO mostra sua latência em ms
+
+`!userinfo`
+BMO mostra suas informações
+
+`!ficha [@user]`
+BMO mostra a ficha de @user
+
+`!activity [texto]`
+BMO muda seu status
 
 `!rpg`
 BMO mostra os comandos específicos da Categoria RPG. Só funciona no canal {canal2.mention}
@@ -95,26 +125,143 @@ BMO da dicas de desenhos fáceis. Só funciona no canal {canal.mention}
 `!ideia2`
 BMO da dicas de desenhos difíceis. Só funciona no canal {canal.mention}
 ''',    
-        colour = 16715320
-    )
+
+colour = 16715320
+)
 
     emb.set_author(name='BMO',
     icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
 
     emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
 
-    emb.set_image(url='https://media.giphy.com/media/10bxTLrpJNS0PC/giphy.gif')
+    """ emb.set_image(url='https://media.giphy.com/media/10bxTLrpJNS0PC/giphy.gif') """
     await ctx.send(embed = emb)
+
+
+
+
+
+
+
+
+
+
+
+#VV ====================== EMBED INFOS ====================== VV
+
+@client.command()
+async def userinfo(ctx):
+    user = ctx.author
+
+    emb = discord.Embed(title='User INFO', description=f'Aqui está as infos sobre {user.mention}', colour=user.colour)
+    emb.set_thumbnail(url=user.avatar_url)
+    emb.add_field(name='NOME', value=f'`{user.name}`', inline=False)
+    emb.add_field(name='APELIDO', value=f'`{user.nick}`', inline=False)
+    emb.add_field(name='CARGO', value=f'`{user.top_role.name}`', inline=False)
+   
+
+   #data entrou no server
+    hora = user.joined_at.hour
+    if hora == 1:
+        emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
+    elif hora == 2:
+        emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
+    elif hora == 3:
+        emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às 0{hora -3}:%M")}`', inline=False)
+    else:
+        emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às {hora - 3}:%M")}`', inline=False)
+    
+
+    #data criação da conta
+    horac = user.created_at.hour
+    if horac == 1:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
+    elif horac == 2:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
+    elif horac == 3:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às 0{horac - 3}:%M")}`', inline=False)
+    else:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às {horac - 3}:%M")}`', inline=False)
+    emb.add_field(name='ID', value=f'`{user.id}`', inline=False)
+    await ctx.send(embed = emb)
+
+
+
+
+@client.command()
+async def ficha(ctx, member: discord.Member):
+    
+    emb = discord.Embed(title='User INFO', description=f'Aqui está as infos sobre {member.mention}', colour=member.colour)
+    emb.set_thumbnail(url=member.avatar_url)
+    emb.add_field(name='NOME', value=f'`{member.name}`', inline=False)
+    emb.add_field(name='APELIDO', value=f'`{member.nick}`', inline=False)
+    emb.add_field(name='CARGO', value=f'`{member.top_role.name}`', inline=False)
+
+    #data entrou no server
+    hora = member.joined_at.hour
+    if hora == 1:
+        emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
+    elif hora == 2:
+        emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
+    elif hora == 3:
+        emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às 0{hora - 3}:%M")}`', inline=False)
+    else:
+        emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às {hora - 3}:%M")}`', inline=False)
+    
+
+    #data criação da conta
+    horac = member.created_at.hour
+    if horac == 1:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
+    elif horac == 2:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
+    elif horac == 3:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às 0{horac - 3}:%M")}`', inline=False)
+    else:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às {horac - 3}:%M")}`', inline=False)
+
+
+
+    emb.add_field(name='ID', value=f'`{member.id}`', inline=False)
+    await ctx.send(embed = emb)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# VV ====================== OUTROS COMANDOS ====================== VV
+
+@client.command()
+async def oi(ctx):
+    channel = ctx.channel
+    if channel.name == '🤖┃bots':
+        await ctx.send(f'Bom dia, {ctx.author.mention}!') 
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+
 
 @client.command()
 async def ping(ctx):
     latency = round(client.latency * 1000, 1)
     await ctx.send(f'Pong! {latency} ms')
 
+
 @client.command()
 async def imposto(ctx, mention):
-    autor = ctx.author.name
-    if autor == 'BerserkerWS':
+    autor = ctx.author.id
+    if autor == 611235322411352107:
         await ctx.send(f'O imperador disse para você pagar os impostos! {mention}')
     else:
         await ctx.send(f'Você não é o imperador!!')
@@ -181,6 +328,28 @@ async def ideia2(ctx):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#VV ====================== COMANDOS DE PUNIÇÕES ====================== VV
+
 @client.command()
 @commands.has_permissions(ban_members=True)
 async def banir(ctx, member: discord.Member, *, reason):
@@ -236,8 +405,6 @@ async def kickar(ctx, member: discord.Member, *, reason):
 
 
 
-
-
 @client.command()
 @commands.has_permissions(ban_members=True)
 async def unban(ctx, *, member):
@@ -252,7 +419,30 @@ async def unban(ctx, *, member):
             await ctx.send(f'{user.mention} foi desbanido')
             return
 
+@client.command(description='Mutes the specified user.')
+@commands.has_permissions(manage_messages=True)
+async def mute(ctx, member: discord.Member, *, reason=None):
+    guild = ctx.guild
+    mutedRole = discord.utils.get(guild.roles, name='Muted')
 
+    if not mutedRole:
+        mutedRole = await guild.create_role(name='Muted')
+
+        for channel in guild.channels:
+            await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=False)
+
+    await member.add_roles(mutedRole, reason=reason)
+    await ctx.send(f'Muted {member.mention} for reason {reason}')
+    await member.send(f'You were muted in the server {guild.name} for {reason}')
+
+@client.command(description='Unmutes a specified user.')
+@commands.has_permissions(manage_messages=True)
+async def unmute(ctx, member: discord.Member):
+    mutedRole = discord.utils.get(ctx.guild.roles, name='Muted')
+
+    await member.remove_roles(mutedRole)
+    await ctx.send(f'Unmuted {member.mention}')
+    await member.send(f'You were unmuted in the server {ctx.guild.name}')
 
 
 
