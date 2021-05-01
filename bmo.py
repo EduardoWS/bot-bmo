@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import random
 import time
 from time import sleep
@@ -38,6 +38,29 @@ async def activity(ctx, *, activity):
     await ctx.send(f'Status atualizado para: `Jogando {activity}`')
 
 
+# VV ====================== TASKS LOOP ====================== VV
+
+@client.command()
+async def task(ctx, enabled='start', interval=10, message=""):
+    if enabled.lower() == 'stop':
+        msg.cancel()
+    elif enabled.lower() == 'start':
+        msg.change_interval(seconds=int(interval))
+        msg.start(ctx, message)
+
+
+@tasks.loop(seconds=10)
+async def msg(ctx, message):
+    await ctx.send(message)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -45,6 +68,25 @@ async def activity(ctx, *, activity):
 
 
 # VV ====================== COMANDOS EXCLUSIVOS DA CATEGORIA RPG ====================== VV
+
+@client.command()
+async def rodar(ctx, dado):
+    fd = dado.find('d')
+    num1 = dado[:fd]
+    num2 = dado[fd+1:]
+    cont = 0
+    await ctx.send('Rodando...')
+    sleep(2)
+    for n in range(1, int(num1)+1):
+        rd = random.randint(1, int(num2))
+        cont += rd
+        await ctx.send(f'`DADO = [{rd}]`')
+        sleep(2)
+    await ctx.send(f'`TOTAL = {cont}`')
+
+
+
+
 
 @client.command()
 async def d(ctx, numero):
@@ -138,9 +180,48 @@ colour = 16715320
     await ctx.send(embed = emb)
 
 
+@client.command()
+async def adm(ctx):
+    emb = discord.Embed(title='COMANDOS DE PUNIÇÕES', 
+    description=f'''
+    `!kickar [id] [motivo]`
+    BMO expulsa um infrator do Reino Doce
 
+    `!banir [id] [motivo]`
+    BMO dá a ordem para a execução do criminoso
 
+    `!unban [id]`
+    BMO ressuscita uma pessoa das trevas
 
+    `!mute03 [id] [motivo]`
+    BMO silencia um plebeu por 30 minutos
+
+    `!mute1 [id] [motivo]`
+    BMO silencia um plebeu por 1 hora
+
+    `!mute2 [id] [motivo]`
+    BMO silencia um plebeu por 2 horas
+    
+    `!mute3 [id] [motivo]`
+    BMO silencia um plebeu por 3 horas
+
+    `!mute10 [id] [motivo]`
+    BMO silencia um plebeu por 10 horas
+
+    `!unmute [id]`
+    BMO retira o silenciamento do plebeu''',
+
+    colour = 16715320
+    )
+
+    emb.set_author(name='ADM',
+    icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+    channel = ctx.channel
+    if channel.name == 'administração':
+        await ctx.send(embed = emb)
+    
 
 
 
@@ -421,19 +502,211 @@ async def unban(ctx, *, member):
 
 @client.command(description='Mutes the specified user.')
 @commands.has_permissions(manage_messages=True)
-async def mute(ctx, member: discord.Member, *, reason=None):
-    guild = ctx.guild
-    mutedRole = discord.utils.get(guild.roles, name='Muted')
+async def mute03(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        guild = ctx.guild
+        mutedRole = discord.utils.get(guild.roles, name='Muted')
 
-    if not mutedRole:
-        mutedRole = await guild.create_role(name='Muted')
+        if not mutedRole:
+            mutedRole = await guild.create_role(name='Muted')
 
-        for channel in guild.channels:
-            await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=False)
+            for channel in guild.channels:
+                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
 
-    await member.add_roles(mutedRole, reason=reason)
-    await ctx.send(f'Muted {member.mention} for reason {reason}')
-    await member.send(f'You were muted in the server {guild.name} for {reason}')
+        
+        channel = client.get_channel(831197248884703283)
+        emb = discord.Embed(
+        title = 'SILENCIADO(A)!!',
+        description = f'{member.mention} foi silenciado(a) do Reino Doce.',
+        colour = 16715320
+    )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+
+        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+
+        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
+        emb.add_field(name='TEMPO:', value='`30 minutos`')
+
+        
+        await channel.send(embed = emb)
+        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
+        await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}')
+        await member.add_roles(mutedRole, reason=reason)
+        await asyncio.sleep(1800)
+        await channel.send(f'{member.mention} você pode voltar a falar agora!')
+        await member.remove_roles(mutedRole)
+
+@client.command(description='Mutes the specified user.')
+@commands.has_permissions(manage_messages=True)
+async def mute1(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        guild = ctx.guild
+        mutedRole = discord.utils.get(guild.roles, name='Muted')
+
+        if not mutedRole:
+            mutedRole = await guild.create_role(name='Muted')
+
+            for channel in guild.channels:
+                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+
+        
+        channel = client.get_channel(831197248884703283)
+        emb = discord.Embed(
+        title = 'SILENCIADO(A)!!',
+        description = f'{member.mention} foi silenciado(a) do Reino Doce.',
+        colour = 16715320
+    )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+
+        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+
+        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
+        emb.add_field(name='TEMPO:', value='`1 hora`')
+
+        
+        await channel.send(embed = emb)
+        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
+        await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}')
+        await member.add_roles(mutedRole, reason=reason)
+        await asyncio.sleep(3600)
+        await channel.send(f'{member.mention} você pode voltar a falar agora!')
+        await member.remove_roles(mutedRole)
+
+@client.command(description='Mutes the specified user.')
+@commands.has_permissions(manage_messages=True)
+async def mute2(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        guild = ctx.guild
+        mutedRole = discord.utils.get(guild.roles, name='Muted')
+
+        if not mutedRole:
+            mutedRole = await guild.create_role(name='Muted')
+
+            for channel in guild.channels:
+                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+
+        
+        channel = client.get_channel(831197248884703283)
+        emb = discord.Embed(
+        title = 'SILENCIADO(A)!!',
+        description = f'{member.mention} foi silenciado(a) do Reino Doce.',
+        colour = 16715320
+    )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+
+        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+
+        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
+        emb.add_field(name='TEMPO:', value='`2 horas`')
+
+        
+        await channel.send(embed = emb)
+        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
+        await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}')
+        await member.add_roles(mutedRole, reason=reason)
+        await asyncio.sleep(7200)
+        await channel.send(f'{member.mention} você pode voltar a falar agora!')
+        await member.remove_roles(mutedRole)
+
+@client.command(description='Mutes the specified user.')
+@commands.has_permissions(manage_messages=True)
+async def mute3(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        guild = ctx.guild
+        mutedRole = discord.utils.get(guild.roles, name='Muted')
+
+        if not mutedRole:
+            mutedRole = await guild.create_role(name='Muted')
+
+            for channel in guild.channels:
+                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+
+        
+        channel = client.get_channel(831197248884703283)
+        emb = discord.Embed(
+        title = 'SILENCIADO(A)!!',
+        description = f'{member.mention} foi silenciado(a) do Reino Doce.',
+        colour = 16715320
+    )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+
+        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+
+        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
+        emb.add_field(name='TEMPO:', value='`3 horas`')
+
+        
+        await channel.send(embed = emb)
+        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
+        await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}')
+        await member.add_roles(mutedRole, reason=reason)
+        await asyncio.sleep(10800)
+        await channel.send(f'{member.mention} você pode voltar a falar agora!')
+        await member.remove_roles(mutedRole)
+
+@client.command(description='Mutes the specified user.')
+@commands.has_permissions(manage_messages=True)
+async def mute10(ctx, member: discord.Member, *, reason=None):
+    channel = ctx.channel
+    if channel.name == 'punições-comandos':
+        guild = ctx.guild
+        mutedRole = discord.utils.get(guild.roles, name='Muted')
+
+        if not mutedRole:
+            mutedRole = await guild.create_role(name='Muted')
+
+            for channel in guild.channels:
+                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+
+        
+        channel = client.get_channel(831197248884703283)
+        emb = discord.Embed(
+        title = 'SILENCIADO(A)!!',
+        description = f'{member.mention} foi silenciado(a) do Reino Doce.',
+        colour = 16715320
+    )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+
+        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+
+        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
+        emb.add_field(name='TEMPO:', value='`10 horas`')
+
+        
+        await channel.send(embed = emb)
+        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
+        await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}')
+        await member.add_roles(mutedRole, reason=reason)
+        await asyncio.sleep(36000)
+        await channel.send(f'{member.mention} você pode voltar a falar agora!')
+        await member.remove_roles(mutedRole)
+
+
+
 
 @client.command(description='Unmutes a specified user.')
 @commands.has_permissions(manage_messages=True)
