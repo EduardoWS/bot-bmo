@@ -6,6 +6,11 @@ from time import sleep
 import json
 import os
 import asyncio
+import sqlite3
+from sqlite3 import Error
+
+
+
 
 if os.path.exists(os.getcwd() + "/config.json"):
     with open("./config.json") as f:
@@ -38,10 +43,96 @@ async def activity(ctx, *, activity):
     await ctx.send(f'Status atualizado para: `Jogando {activity}`')
 
 
+# VV ====================== BANCO DE DADOS ====================== VV
+
+def conexaom():
+    con = None
+    try:
+        con = sqlite3.connect('monopoly.db')
+    except Error as ex:
+        print(ex)
+    return con 
+
+
+#---------------- INSERIR ----------------
+def inserir(conexao, sql):
+    try:
+        c = conexao.cursor()
+        c.execute(sql)
+        conexao.commit()
+    except Error as ex:
+        print(ex)
+
+@client.command()
+async def insertt(ctx, dinheiro, member: discord.Member, senha):
+    vcon = conexaom()
+    member = member.id
+    vsql = f"""INSERT INTO banco_dinheiro
+            (T_DINHEIRO, T_IDUSER, N_SENHA)
+            VALUES({dinheiro}, {member}, {senha})
+            """
+    inserir(vcon, vsql)
+    await ctx.send('Valores inseridos com sucesso!') 
+
+#---------------- DELETAR ----------------
+def deletar(conexao, sql):
+    try:
+        c = conexao.cursor()
+        c.execute(sql)
+        conexao.commit()
+    except Error as ex:
+        print(ex)
+
+@client.command()
+async def delet(ctx, idu):
+    vcon = conexaom()
+    vsql = f"DELETE FROM banco_dinheiro WHERE N_ID={idu}"
+    deletar(vcon, vsql)
+    await ctx.send(f'A conta {idu} foi deletada com sucesso!')
+
+#---------------- UPDATE ----------------
+def atualizar(conexao, sql):
+    try:
+        c = conexao.cursor()
+        c.execute(sql)
+        conexao.commit()
+    except Error as ex:
+        print(ex)
+
+@client.command()
+async def updat(ctx, dinheiro, senha):
+    vcon = conexaom()
+    vsql = f"UPDATE banco_dinheiro SET T_DINHEIRO={dinheiro} WHERE N_SENHA={senha}"
+    deletar(vcon, vsql)
+    await ctx.send(f'A conta foi atualizada com sucesso!') 
+
+#---------------- SELECT ----------------
+def consulta(conexao, sql):
+    
+    c = conexao.cursor()
+    c.execute(sql)
+    resultado = c.fetchall()
+    return resultado
+
+@client.command()
+async def banco(ctx):
+    vcon = conexaom()
+    vsql = "SELECT * FROM banco_dinheiro"
+    res = consulta(vcon, vsql)
+    for r in res:
+        await ctx.send(r)
+
+
+
+
+
+
+
+
 # VV ====================== TASKS LOOP ====================== VV
 
 @client.command()
-async def task(ctx, enabled='start', interval=10, message=""):
+async def loop(ctx, enabled='start', interval=10, message=""):
     if enabled.lower() == 'stop':
         msg.cancel()
     elif enabled.lower() == 'start':
@@ -249,6 +340,8 @@ async def userinfo(ctx):
         emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
     elif hora == 3:
         emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às 0{hora -3}:%M")}`', inline=False)
+    elif hora == 0:
+        emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
     else:
         emb.add_field(name='ENTROU', value=f'`{user.joined_at.strftime(f"%d/%m/%Y às {hora - 3}:%M")}`', inline=False)
     
@@ -261,8 +354,11 @@ async def userinfo(ctx):
         emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
     elif horac == 3:
         emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às 0{horac - 3}:%M")}`', inline=False)
+    elif horac == 0:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
     else:
         emb.add_field(name='CONTA CRIADA EM', value=f'`{user.created_at.strftime(f"%d/%m/%Y às {horac - 3}:%M")}`', inline=False)
+
     emb.add_field(name='ID', value=f'`{user.id}`', inline=False)
     await ctx.send(embed = emb)
 
@@ -286,6 +382,8 @@ async def ficha(ctx, member: discord.Member):
         emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
     elif hora == 3:
         emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às 0{hora - 3}:%M")}`', inline=False)
+    elif hora == 0:
+        emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às {hora + 21}:%M")}`', inline=False)
     else:
         emb.add_field(name='ENTROU', value=f'`{member.joined_at.strftime(f"%d/%m/%Y às {hora - 3}:%M")}`', inline=False)
     
@@ -298,6 +396,8 @@ async def ficha(ctx, member: discord.Member):
         emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
     elif horac == 3:
         emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às 0{horac - 3}:%M")}`', inline=False)
+    elif horac == 0:
+        emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às {horac + 21}:%M")}`', inline=False)
     else:
         emb.add_field(name='CONTA CRIADA EM', value=f'`{member.created_at.strftime(f"%d/%m/%Y às {horac - 3}:%M")}`', inline=False)
 
@@ -721,4 +821,4 @@ async def unmute(ctx, member: discord.Member):
 
 
 
-client.run('token')
+client.run(token)
