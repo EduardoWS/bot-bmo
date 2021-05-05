@@ -8,7 +8,7 @@ import os
 import asyncio
 import sqlite3
 from sqlite3 import Error
-
+import psycopg2 as db
 
 
 
@@ -31,9 +31,13 @@ client.remove_command('help')
 
 
 
+
+
+
 @client.event
 async def on_ready():
     print('BMO está ON !!!')
+
     await client.change_presence(activity=discord.Game(name='os outros pela janela'))
 
 @client.command()
@@ -41,6 +45,11 @@ async def on_ready():
 async def activity(ctx, *, activity):
     await client.change_presence(activity=discord.Game(name=activity))
     await ctx.send(f'Status atualizado para: `Jogando {activity}`')
+
+
+
+
+
 
 
 # VV ====================== BANCO DE DADOS ====================== VV
@@ -64,12 +73,12 @@ def inserir(conexao, sql):
         print(ex)
 
 @client.command()
-async def insertt(ctx, dinheiro, member: discord.Member, senha):
+async def insertt(ctx, dinheiro, member: discord.Member):
     vcon = conexaom()
     member = member.id
     vsql = f"""INSERT INTO banco_dinheiro
-            (T_DINHEIRO, T_IDUSER, N_SENHA)
-            VALUES({dinheiro}, {member}, {senha})
+            (N_DINHEIRO, N_IDUSER)
+            VALUES({dinheiro}, {member})
             """
     inserir(vcon, vsql)
     await ctx.send('Valores inseridos com sucesso!') 
@@ -90,6 +99,13 @@ async def delet(ctx, idu):
     deletar(vcon, vsql)
     await ctx.send(f'A conta {idu} foi deletada com sucesso!')
 
+@client.command()
+async def deletall(ctx):
+    vcon = conexaom()
+    vsql = f"DELETE FROM banco_dinheiro"
+    deletar(vcon, vsql)
+    await ctx.send(f'As contas foram deletadas com sucesso!')
+
 #---------------- UPDATE ----------------
 def atualizar(conexao, sql):
     try:
@@ -100,9 +116,9 @@ def atualizar(conexao, sql):
         print(ex)
 
 @client.command()
-async def updat(ctx, dinheiro, senha):
+async def updat(ctx, dinheiro):
     vcon = conexaom()
-    vsql = f"UPDATE banco_dinheiro SET T_DINHEIRO={dinheiro} WHERE N_SENHA={senha}"
+    vsql = f"UPDATE banco_dinheiro SET N_DINHEIRO={dinheiro} WHERE N_SENHA={senha}"
     deletar(vcon, vsql)
     await ctx.send(f'A conta foi atualizada com sucesso!') 
 
@@ -111,16 +127,215 @@ def consulta(conexao, sql):
     
     c = conexao.cursor()
     c.execute(sql)
-    resultado = c.fetchall()
+    global resultado
+    resultado = c.fetchone()
     return resultado
 
 @client.command()
-async def banco(ctx):
+async def banco(ctx, member: discord.Member):
     vcon = conexaom()
-    vsql = "SELECT * FROM banco_dinheiro"
-    res = consulta(vcon, vsql)
-    for r in res:
-        await ctx.send(r)
+    member = member.id 
+    vsql = (f"SELECT N_IDUSER FROM banco_dinheiro WHERE N_IDUSER = {member}")
+    
+    try:
+        res = consulta(vcon, vsql)
+        if resultado[0] == None:
+            pass
+
+    except:
+        await ctx.send('Você não tem uma conta criada!')
+    else:
+        await ctx.send('Conta encontrada!')
+        for r in res:
+            await ctx.send(r)
+
+
+
+
+
+
+
+# VV ====================== ECONOMIA ====================== VV
+
+@client.command()
+async def criarconta(ctx):
+    vcon = conexaom()
+    autor = ctx.author.id
+    nome = ctx.author.name
+    criar = f"""INSERT INTO banco_dinheiro
+            (N_DINHEIRO, N_IDUSER, T_NOME)
+            VALUES('100', '{autor}', '{nome}')
+            """
+    
+    vsql = (f"SELECT N_IDUSER FROM banco_dinheiro WHERE N_IDUSER = {autor}")
+
+    try:
+        
+        if resultado[0] == None:
+            pass
+    except:
+        inserir(vcon, criar)
+        await ctx.send('Conta criada com sucesso! Use o comando `!mybank` para ver mais informações')
+    else:
+        await ctx.send('Você já tem uma conta! Use o comando `!mybank` para ver mais informações')
+    
+
+    
+@client.command()
+async def bank(ctx, member: discord.Member):
+    connection = sqlite3.connect("monopoly.db")
+    c = connection.cursor()
+    vsql = ("SELECT N_IDUSER, N_DINHEIRO FROM banco_dinheiro WHERE N_IDUSER = ?")
+    val = (member.id, )
+    c.execute(vsql, val)
+    resultado = c.fetchmany()
+
+    
+    try:
+        if resultado[0] == None:
+            pass
+    except:
+        await ctx.send(f'Essa pessoa não tem uma conta criada!')
+    else:
+        for r in resultado:
+            idu = r[0]
+            saldo = r[1]
+
+        emb = discord.Embed(
+        title = 'BANK:',
+        description = f'''
+Nome: `{member.name}`
+
+ID da conta: ||`{idu}`||
+
+Saldo: `{saldo} Cookies`
+        ''',
+        colour = 16715320
+        )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url=member.avatar_url)
+        await ctx.send(embed = emb)
+
+
+@client.command()
+async def mybank(ctx):
+    connection = sqlite3.connect("monopoly.db")
+    c = connection.cursor()
+    vsql = ("SELECT N_IDUSER, N_DINHEIRO FROM banco_dinheiro WHERE N_IDUSER = ?")
+    val = (ctx.author.id, )
+    c.execute(vsql, val)
+    resultado = c.fetchmany()
+
+    nome = ctx.author.name
+    try:
+        if resultado[0] == None:
+            pass
+    except:
+        await ctx.send('Você não tem uma conta criada! Crie uma conta com `!criarconta`')
+    else:
+        for r in resultado:
+            idu = r[0]
+            saldo = r[1]
+
+        emb = discord.Embed(
+        title = 'BANK:',
+        description = f'''
+Nome: `{nome}`
+
+ID da conta: ||`{idu}`||
+
+Saldo: `{saldo} Cookies`
+        ''',
+        colour = 16715320
+        )
+
+        emb.set_author(name='BMO',
+        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+        emb.set_thumbnail(url=ctx.author.avatar_url)
+        await ctx.send(embed = emb)
+
+ 
+
+
+
+
+
+
+@client.command()
+async def pay(ctx, quant, member: discord.Member):
+    connection = sqlite3.connect("monopoly.db")
+    c = connection.cursor()
+
+    pagar = f"""INSERT INTO banco_dinheiro
+            (N_DINHEIRO, N_IDUSER)
+            VALUES(?, ?)
+            """
+    pag = (quant, member.id)
+
+    vsql = (f"SELECT N_IDUSER, N_DINHEIRO FROM banco_dinheiro WHERE N_IDUSER = ?")
+    val = (member.id,)
+    c.execute(vsql, val)
+    resultado = c.fetchmany()
+    try:
+        if resultado[0] == None:
+            pass
+    except:
+        await ctx.send(f'Essa pessoa não tem uma conta criada!')
+    else:
+        for r in resultado:
+            idu = r[0]
+            saldo = r[1]
+            
+        
+        vsql2 = ("SELECT N_IDUSER, N_DINHEIRO FROM banco_dinheiro WHERE N_IDUSER = ?")
+        val2 = (ctx.author.id,)
+        c.execute(vsql2, val2)
+        resultado2 = c.fetchmany()
+        try:
+            if resultado2[0] == None:
+                pass
+        except:
+            await ctx.send(f'Você não tem uma conta criada! Crie uma conta com `!criarconta`')
+        else:
+            for r in resultado2:
+                idu2 = r[0]
+                saldo2 = r[1]
+            if saldo2 < int(quant):
+                await ctx.send('Cookies insuficientes!')
+            else:
+                vcon = conexaom()
+                total = saldo + int(quant)
+                total2 = saldo2 - int(quant)
+                updt = ("UPDATE banco_dinheiro SET N_DINHEIRO=? WHERE N_IDUSER=?")
+                up = (total, member.id)
+                c = vcon.cursor()
+                c.execute(updt, up)
+                vcon.commit()
+                
+                
+                updt2 = ("UPDATE banco_dinheiro SET N_DINHEIRO=? WHERE N_IDUSER=?")
+                up2 = (total2, ctx.author.id)
+                c = vcon.cursor()
+                c.execute(updt2, up2)
+                vcon.commit()
+                await ctx.send(f'Transação realizada com sucesso! Novo saldo: `{total2} cookies`')
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -143,7 +358,6 @@ async def loop(ctx, enabled='start', interval=10, message=""):
 @tasks.loop(seconds=10)
 async def msg(ctx, message):
     await ctx.send(message)
-
 
 
 
@@ -246,8 +460,8 @@ BMO mostra suas informações
 `!ficha [@user]`
 BMO mostra a ficha de @user
 
-`!activity [texto]`
-BMO muda seu status
+`!economia`
+BMO lista todos os comandos da categoria "economia"
 
 `!rpg`
 BMO mostra os comandos específicos da Categoria RPG. Só funciona no canal {canal2.mention}
@@ -269,6 +483,46 @@ colour = 16715320
 
     """ emb.set_image(url='https://media.giphy.com/media/10bxTLrpJNS0PC/giphy.gif') """
     await ctx.send(embed = emb)
+
+@client.command()
+async def economia(ctx):
+    emb = discord.Embed(
+title = 'COMANDOS ECONOMIA:',
+description = f'''
+
+`!criarconta` 
+Cria uma conta no Bank
+
+`!bank [@user]`
+BMO mostra as informações do Bank de @user
+
+`!mybank`
+BMO mostra as informações do seu Bank
+
+`!pay [quantidade] [@user]`
+Transfere cookies para @user
+''',
+
+
+colour = 16715320
+)
+
+    emb.set_author(name='BMO',
+    icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+
+    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+
+    
+    await ctx.send(embed = emb)
+
+
+
+
+
+
+
+
+
 
 
 @client.command()
@@ -816,6 +1070,7 @@ async def unmute(ctx, member: discord.Member):
     await member.remove_roles(mutedRole)
     await ctx.send(f'Unmuted {member.mention}')
     await member.send(f'You were unmuted in the server {ctx.guild.name}')
+
 
 
 
