@@ -59,7 +59,7 @@ async def on_message(message):
             await asyncio.sleep(20) 
             await message.delete()
 
-    elif channel.name == 'jujuba-8h':
+    """ elif channel.name == 'jujuba-8h':
         if message.author == client.user:
             await asyncio.sleep(60) 
             await message.delete()
@@ -81,7 +81,7 @@ async def on_message(message):
             await message.delete()
         else:
             await asyncio.sleep(60) 
-            await message.delete()
+            await message.delete() """
 
 
 
@@ -112,22 +112,26 @@ como_usar = """
 
 @client.command()
 async def criarconta(ctx):
-    conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
-    cur = conn.cursor()
-    
-    
-    
-    cur.execute("SELECT iduser FROM bank WHERE iduser = %s", (ctx.author.id,))
-    resultado = cur.fetchone()
-
-    if resultado == None:
-        cur.execute("INSERT INTO bank (cookies, iduser, nome) VALUES (5, %s, %s)", (ctx.author.id, ctx.author.name))
-        conn.commit()
-        await ctx.send('Conta criada com sucesso! Use o comando `!mybank` para ver mais informações')
+    channel = ctx.channel
+    if channel.name == '🤖┃servos':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
         
+        
+        
+        cur.execute("SELECT iduser FROM bank WHERE iduser = %s", (ctx.author.id,))
+        resultado = cur.fetchone()
 
+        if resultado == None:
+            cur.execute("INSERT INTO bank (cookies, iduser, nome) VALUES (5, %s, %s)", (ctx.author.id, ctx.author.name))
+            conn.commit()
+            await ctx.send(f'{ctx.author.mention}, conta criada com sucesso! Use o comando `!mybank` para ver mais informações')
+            
+
+        else:
+            await ctx.send('Você já tem uma conta! Use o comando `!mybank` para ver mais informações')
     else:
-        await ctx.send('Você já tem uma conta! Use o comando `!mybank` para ver mais informações')
+        await ctx.send('Canal errado, bobinho(a)!')
 
     cur.close()
     conn.close()
@@ -298,15 +302,15 @@ async def farm(ctx):
                 emb = discord.Embed(
                 title = '🌱 FAZENDA:',
                 description = f'''
-        **Agora você é um camponês!!**
+**Agora você é um camponês!!**
 
-        A categoria fazenda foi liberada e você ganhou:
+A categoria fazenda foi liberada e você ganhou:
 
-        > 50 sementes de jujuba
-        > Lote A
+> 50 sementes de jujuba
+> Lote A
 
 
-        **Use o comando `!farmt` para ver o tutorial**
+**Use o comando `!farmt` para ver o tutorial**
                     ''',
                 colour = 65280
                 )
@@ -407,10 +411,283 @@ Para ver quantas sementes e quais lotes você possui, digite `!myfarm`
         await ctx.send('Canal errado, bobinho(a)!')
 
 
+@client.command()
+async def buy(ctx, produto):
+    channel = ctx.channel
+    if channel.name == '💸┃loja':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
 
 
+        #JUJUBAS============
+        if produto == '50j':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 5:
+                totald = da[0] - 5
+                totals = sa[0] + 50
+                cur.execute("UPDATE fazenda SET s_j=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `50 sementes de jujuba`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '100j':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 10:
+                totald = da[0] - 10
+                totals = sa[0] + 100
+                cur.execute("UPDATE fazenda SET s_j=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `100 sementes de jujuba`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+        elif produto == '500j':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 50:
+                totald = da[0] - 50
+                totals = sa[0] + 500
+                cur.execute("UPDATE fazenda SET s_j=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `500 sementes de jujuba`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '1000j':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 100:
+                totald = da[0] - 100
+                totals = sa[0] + 1000
+                cur.execute("UPDATE fazenda SET s_j=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1000 sementes de jujuba`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+
+        #ALGODÃO-DOCE============
+        elif produto == '50ad':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 10:
+                totald = da[0] - 10
+                totals = sa[0] + 50
+                cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `50 sementes de algodão-doce`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '100ad':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 20:
+                totald = da[0] - 20
+                totals = sa[0] + 100
+                cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `100 sementes de algodão-doce`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+        elif produto == '500ad':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 100:
+                totald = da[0] - 100
+                totals = sa[0] + 500
+                cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `500 sementes de algodão-doce`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '1000ad':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 200:
+                totald = da[0] - 200
+                totals = sa[0] + 1000
+                cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1000 sementes de algodão-doce`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+        #MARSHMALLOW============
+        elif produto == '50m':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 100:
+                totald = da[0] - 100
+                totals = sa[0] + 50
+                cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `50 sementes de marshmallow`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '100m':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 200:
+                totald = da[0] - 200
+                totals = sa[0] + 100
+                cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `100 sementes de marshmallow`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+        elif produto == '500m':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 1000:
+                totald = da[0] - 1000
+                totals = sa[0] + 500
+                cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `500 sementes de marshmallow`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '1000m':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 2000:
+                totald = da[0] - 2000
+                totals = sa[0] + 1000
+                cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1000 sementes de marshmallow`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+
+        #LOTES
+        elif produto == 'loteb':
+            cur.execute("SELECT loteid FROM fazenda WHERE iduser = %s AND loteid = 'B'", (ctx.author.id,))
+            lote = cur.fetchone()
+
+            if lote == None:
+                cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+                da = cur.fetchone()
+                if da[0] >= 25000:
+                    totald = da[0] - 25000
+                    cur.execute("INSERT INTO fazenda (iduser, lotes, loteid, nome) VALUES (%s, 1, 'B', %s)", (ctx.author.id, ctx.author.name))
+                    cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                    await ctx.send(f'{ctx.author.mention}, compra realizada com sucesso!!')
+                    conn.commit()
+
+            else:
+                await ctx.send(f'{ctx.author.mention}, você já possui o `lote B`')
+
+        elif produto == 'lotec':
+            cur.execute("SELECT loteid FROM fazenda WHERE iduser = %s AND loteid = 'B'", (ctx.author.id,))
+            loteB = cur.fetchone()
+
+            if loteB == None:
+                await ctx.send(f'{ctx.author.mention}, você precisa ter o `lote B` antes de comprar o `lote C`')
+
+            else:
+                cur.execute("SELECT loteid FROM fazenda WHERE iduser = %s AND loteid = 'C'", (ctx.author.id,))
+                loteC = cur.fetchone()
+
+                if loteC == None:
+                    cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+                    da = cur.fetchone()
+                    if da[0] >= 25000:
+                        totald = da[0] - 25000
+                        cur.execute("INSERT INTO fazenda (iduser, lotes, loteid, nome) VALUES (%s, 1, 'B', %s)", (ctx.author.id, ctx.author.name))
+                        cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                        await ctx.send(f'{ctx.author.mention}, compra realizada com sucesso!!')
+                        conn.commit()
+
+                else:
+                    await ctx.send(f'{ctx.author.mention}, você já possui o `lote C`')
 
 
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+    cur.close()
+    conn.close()
 
 @client.command()
 async def myfarm(ctx):
@@ -427,6 +704,7 @@ async def myfarm(ctx):
         
         cur.execute("SELECT loteid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
         loteC = cur.fetchmany()
+
         
         #LOTE A
         if loteB == [] and loteC == []:
@@ -441,16 +719,16 @@ async def myfarm(ctx):
                 description = f'''
         {ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
+**LOTES:**
+> Lote A `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
 
                 ''',
                 colour = 65280
@@ -463,6 +741,8 @@ async def myfarm(ctx):
             else:
                 cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
                 resultado_datas = cur.fetchmany()
+
+
                 dataa = resultado_datas[0][0]
                 horaa = resultado_datas[0][1]
                 
@@ -479,35 +759,44 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    planta = 'Marshmallow plantado'
                 
                 
 
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 if result < datetime.timedelta(hours=10):
-                    formatar = f'0{formatar}'
-
+                    if result > datetime.timedelta(hours=0):
+                        formatar = f'0{formatar}'
+                    else:
+                        formatar = f'Pronto para colher!'
+                
+            
+                    
+                
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
+**LOTES:**
+> Lote A `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatar}`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatar}`
 
                 ''',
                 colour = 65280
@@ -535,20 +824,20 @@ async def myfarm(ctx):
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
-        > Lote B: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
+> Lote B: `nada foi plantado aqui`
                 ''',
                 colour = 65280
                 )
@@ -576,36 +865,46 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+               
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                 
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                  
+                    planta = 'Marshmallow plantado'
                 
 
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 if result < datetime.timedelta(hours=10):
-                    formatar = f'0{formatar}'
+                    if result > datetime.timedelta(hours=0):
+                        formatar = f'0{formatar}'
+                    else:
+                        formatar = f'Pronto para colher!'
+                
 
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatar}`
-        > Lote B: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatar}`
+> Lote B: `nada foi plantado aqui`
 
                 ''',
                 colour = 65280
@@ -632,40 +931,48 @@ async def myfarm(ctx):
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
                 plantedidB = cur.fetchone()
                 
-                if plantedidA[0] == 'j':
+ 
+                if plantedidB[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
-                elif plantedidA[0] == 'ad':
+                    
+                    planta = 'Jujubas plantadas'
+                elif plantedidB[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
-                elif plantedidA[0] == 'm':
+                   
+                    planta = 'Algodão-doce plantado'
+                elif plantedidB[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
-                
-                
+                   
+                    planta = 'Marshmallow plantado'
               
 
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 if result < datetime.timedelta(hours=10):
-                    formatar = f'0{formatar}'
+                    if result > datetime.timedelta(hours=0):
+                        formatar = f'0{formatar}'
+                    else:
+                        formatar = f'Pronto para colher!'
 
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
-        > Lote B: `em uso`
-        > Tempo que falta: `{formatar}`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
+> Lote B: `{planta}`
+> Tempo que falta: `{formatar}`
 
 
                 ''',
@@ -705,20 +1012,29 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                  
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    
+                    planta = 'Marshmallow plantado'
 
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
                 plantedidB = cur.fetchone()
 
                 if plantedidB[0] == 'j':
-                    colheitaB = insecB + datetime.timedelta(hours=8)
+                    colheitaB = insec + datetime.timedelta(hours=8)
+                    plantaB = 'Jujubas plantadas'
                 elif plantedidB[0] == 'ad':
-                    colheitaB = insecB + datetime.timedelta(hours=12)
+                    colheitaB = insec + datetime.timedelta(hours=12)
+                    plantaB = 'Algodão-doce plantado'
                 elif plantedidB[0] == 'm':
-                    colheitaB = insecB + datetime.timedelta(hours=24)
+                    colheitaB = insec + datetime.timedelta(hours=24)
+                    plantaB = 'Marshmallow plantado'
 
                 resultA = colheita - datetime.datetime.now()
                 resultB = colheitaB - datetime.datetime.now()
@@ -726,30 +1042,36 @@ async def myfarm(ctx):
                 formatarB = ':'.join(str(resultB).split(':')[:2])
 
                 if resultA < datetime.timedelta(hours=10):
-                    formatarA = f'0{formatar}'
+                    if resultA > datetime.timedelta(hours=0):
+                        formatarA = f'0{formatarA}'
+                    else:
+                        formatarA = f'Pronto para colher!'
 
                 if resultB < datetime.timedelta(hours=10):
-                    formatarB = f'0{formatar}'
+                    if resultB > datetime.timedelta(hours=0):
+                        formatarB = f'0{formatarB}'
+                    else:
+                        formatarB = f'Pronto para colher!'
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatarA}`
-        > Lote B: `em uso`
-        > Tempo que falta: `{formatarB}`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatarA}`
+> Lote B: `{plantaB}`
+> Tempo que falta: `{formatarB}`
 
 
                 ''',
@@ -777,22 +1099,22 @@ async def myfarm(ctx):
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
-        > Lote B: `nada foi plantado aqui`
-        > Lote C: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
+> Lote B: `nada foi plantado aqui`
+> Lote C: `nada foi plantado aqui`
                 ''',
                 colour = 65280
                 )
@@ -820,38 +1142,44 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    planta = 'Marshmallow plantado'
                 
 
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 if result < datetime.timedelta(hours=10):
-                    formatar = f'0{formatar}'
+                    if result > datetime.timedelta(hours=0):
+                        formatar = f'0{formatar}'
+                    else:
+                        formatar = f'Pronto para colher!'
 
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatar}`
-        > Lote B: `nada foi plantado aqui`
-        > Lote C: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatar}`
+> Lote B: `nada foi plantado aqui`
+> Lote C: `nada foi plantado aqui`
 
                 ''',
                 colour = 65280
@@ -878,12 +1206,15 @@ async def myfarm(ctx):
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
                 plantedidB = cur.fetchone()
                 
-                if plantedidA[0] == 'j':
+                if plantedidB[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
-                elif plantedidA[0] == 'ad':
+                    plantaB = 'Jujubas plantadas'
+                elif plantedidB[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
-                elif plantedidA[0] == 'm':
+                    plantaB = 'Algodão-doce plantado'
+                elif plantedidB[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    plantaB = 'Marshmallow plantado'
                 
                 
               
@@ -891,29 +1222,32 @@ async def myfarm(ctx):
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 if result < datetime.timedelta(hours=10):
-                    formatar = f'0{formatar}'
+                    if result > datetime.timedelta(hours=0):
+                        formatar = f'0{formatar}'
+                    else:
+                        formatar = f'Pronto para colher!'
 
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
-        > Lote B: `em uso`
-        > Tempo que falta: `{formatar}`
-        > Lote C: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
+> Lote B: `{plantaB}`
+> Tempo que falta: `{formatar}`
+> Lote C: `nada foi plantado aqui`
 
 
                 ''',
@@ -953,20 +1287,26 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    planta = 'Marshmallow plantado'
 
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
                 plantedidB = cur.fetchone()
 
                 if plantedidB[0] == 'j':
-                    colheitaB = insecB + datetime.timedelta(hours=8)
+                    colheitaB = insec + datetime.timedelta(hours=8)
+                    plantaB = 'Jujubas plantadas'
                 elif plantedidB[0] == 'ad':
-                    colheitaB = insecB + datetime.timedelta(hours=12)
+                    colheitaB = insec + datetime.timedelta(hours=12)
+                    plantaB = 'Algodão-doce plantado'
                 elif plantedidB[0] == 'm':
-                    colheitaB = insecB + datetime.timedelta(hours=24)
+                    colheitaB = insec + datetime.timedelta(hours=24)
+                    plantaB = 'Marshmallow plantado'
 
                 resultA = colheita - datetime.datetime.now()
                 resultB = colheitaB - datetime.datetime.now()
@@ -974,32 +1314,38 @@ async def myfarm(ctx):
                 formatarB = ':'.join(str(resultB).split(':')[:2])
 
                 if resultA < datetime.timedelta(hours=10):
-                    formatarA = f'0{formatar}'
+                    if resultA > datetime.timedelta(hours=0):
+                        formatarA = f'0{formatarA}'
+                    else:
+                        formatarA = f'Pronto para colher!'
 
                 if resultB < datetime.timedelta(hours=10):
-                    formatarB = f'0{formatar}'
+                    if resultB > datetime.timedelta(hours=0):
+                        formatarB = f'0{formatarB}'
+                    else:
+                        formatarB = f'Pronto para colher!'
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatarA}`
-        > Lote B: `em uso`
-        > Tempo que falta: `{formatarB}`
-        > Lote C: `nada foi plantado aqui`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatarA}`
+> Lote B: `{plantaB}`
+> Tempo que falta: `{formatarB}`
+> Lote C: `nada foi plantado aqui`
 
 
                 ''',
@@ -1032,38 +1378,44 @@ async def myfarm(ctx):
                 
                 if plantedidC[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    planta = 'Jujubas plantadas'
                 elif plantedidC[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    planta = 'Algodão-doce plantado'
                 elif plantedidC[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    planta = 'Marshmallow plantado'
                 
 
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 if result < datetime.timedelta(hours=10):
-                    formatar = f'0{formatar}'
+                    if result > datetime.timedelta(hours=0):
+                        formatar = f'0{formatar}'
+                    else:
+                        formatar = f'Pronto para colher!'
 
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
-        > Lote B: `nada foi plantado aqui`
-        > Lote C: `em uso`
-        > Tempo que falta: `{formatar}`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
+> Lote B: `nada foi plantado aqui`
+> Lote C: `{planta}`
+> Tempo que falta: `{formatar}`
 
                 ''',
                 colour = 65280
@@ -1104,20 +1456,26 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    planta = 'Marshmallow plantado'
 
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
                 plantedidC = cur.fetchone()
 
                 if plantedidC[0] == 'j':
-                    colheitaC = insecC + datetime.timedelta(hours=8)
+                    colheitaC = insec + datetime.timedelta(hours=8)
+                    plantaC = 'Jujubas plantadas'
                 elif plantedidC[0] == 'ad':
-                    colheitaC = insecC + datetime.timedelta(hours=12)
+                    colheitaC = insec + datetime.timedelta(hours=12)
+                    plantaC = 'Algodão-doce plantado'
                 elif plantedidC[0] == 'm':
-                    colheitaC = insecC + datetime.timedelta(hours=24)
+                    colheitaC = insec + datetime.timedelta(hours=24)
+                    plantaC = 'Marshmallow plantado'
 
                 resultA = colheita - datetime.datetime.now()
                 resultC = colheitaC - datetime.datetime.now()
@@ -1125,32 +1483,38 @@ async def myfarm(ctx):
                 formatarC = ':'.join(str(resultC).split(':')[:2])
 
                 if resultA < datetime.timedelta(hours=10):
-                    formatarA = f'0{formatar}'
+                    if resultA > datetime.timedelta(hours=0):
+                        formatarA = f'0{formatarA}'
+                    else:
+                        formatarA = f'Pronto para colher!'
 
                 if resultC < datetime.timedelta(hours=10):
-                    formatarC = f'0{formatar}'
+                    if resultC > datetime.timedelta(hours=0):
+                        formatarC = f'0{formatarC}'
+                    else:
+                        formatarC = f'Pronto para colher!'
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatarA}`
-        > Lote B: `nada foi plantado aqui`
-        > Lote C: `em uso`
-        > Tempo que falta: `{formatarC}`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatarA}`
+> Lote B: `nada foi plantado aqui`
+> Lote C: `{plantaC}`
+> Tempo que falta: `{formatarC}`
 
 
                 ''',
@@ -1161,7 +1525,7 @@ async def myfarm(ctx):
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
                 await ctx.send(embed = emb)
 
-        elif plantedA[0] == 0 and plantedB[0] == 1 and plantedC[0] == 0:
+        elif plantedA[0] == 1 and plantedB[0] == 0 and plantedC[0] == 0:
                 cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
                 resultado_datasB = cur.fetchmany()
                 cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
@@ -1191,53 +1555,65 @@ async def myfarm(ctx):
                 
                 if plantedidB[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    plantaB = 'Jujubas plantadas'
                 elif plantedidB[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    plantaB = 'Algodão-doce plantado'
                 elif plantedidB[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    plantaB = 'Marshmallow plantado'
 
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
                 plantedidC = cur.fetchone()
 
                 if plantedidC[0] == 'j':
-                    colheitaC = insecC + datetime.timedelta(hours=8)
+                    colheitaC = insec + datetime.timedelta(hours=8)
+                    plantaC = 'Jujubas plantadas'
                 elif plantedidC[0] == 'ad':
-                    colheitaC = insecC + datetime.timedelta(hours=12)
+                    colheitaC = insec + datetime.timedelta(hours=12)
+                    plantaC = 'Algodão-doce plantado'
                 elif plantedidC[0] == 'm':
-                    colheitaC = insecC + datetime.timedelta(hours=24)
+                    colheitaC = insec + datetime.timedelta(hours=24)
+                    plantaC = 'Marshmallow plantado'
 
                 resultB = colheita - datetime.datetime.now()
                 resultC = colheitaC - datetime.datetime.now()
                 formatarB = ':'.join(str(resultB).split(':')[:2])
                 formatarC = ':'.join(str(resultC).split(':')[:2])
 
-                if resultA < datetime.timedelta(hours=10):
-                    formatarB = f'0{formatar}'
+                if resultB < datetime.timedelta(hours=10):
+                    if resultB > datetime.timedelta(hours=0):
+                        formatarB = f'0{formatarB}'
+                    else:
+                        formatarB = f'Pronto para colher!'
 
                 if resultC < datetime.timedelta(hours=10):
-                    formatarC = f'0{formatar}'
+                    if resultC > datetime.timedelta(hours=0):
+                        formatarC = f'0{formatarC}'
+                    else:
+                        formatarC = f'Pronto para colher!'
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `nada foi plantado aqui`
-        > Lote B: `em uso`
-        > Tempo que falta: `{formatarB}`
-        > Lote C: `em uso`
-        > Tempo que falta: `{formatarC}`
+**PLANTAÇÕES:**
+> Lote A: `nada foi plantado aqui`
+> Lote B: `{plantaB}`
+> Tempo que falta: `{formatarB}`
+> Lote C: `{plantaC}`
+> Tempo que falta: `{formatarC}`
 
 
                 ''',
@@ -1290,30 +1666,39 @@ async def myfarm(ctx):
                 
                 if plantedidA[0] == 'j':
                     colheita = insec + datetime.timedelta(hours=8)
+                    planta = 'Jujubas plantadas'
                 elif plantedidA[0] == 'ad':
                     colheita = insec + datetime.timedelta(hours=12)
+                    planta = 'Algodão-doce plantado'
                 elif plantedidA[0] == 'm':
                     colheita = insec + datetime.timedelta(hours=24)
+                    planta = 'Marshmallow plantado'
 
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
                 plantedidB = cur.fetchone()
 
                 if plantedidB[0] == 'j':
-                    colheitaB = insecB + datetime.timedelta(hours=8)
-                elif plantedidC[0] == 'ad':
-                    colheitaB = insecB + datetime.timedelta(hours=12)
+                    colheitaB = insec + datetime.timedelta(hours=8)
+                    plantaB = 'Jujubas plantadas'
+                elif plantedidB[0] == 'ad':
+                    colheitaB = insec + datetime.timedelta(hours=12)
+                    plantaB = 'Algodão-doce plantado'
                 elif plantedidB[0] == 'm':
-                    colheitaB = insecB + datetime.timedelta(hours=24)
+                    colheitaB = insec + datetime.timedelta(hours=24)
+                    plantaB = 'Marshmallow plantado'
 
                 cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
                 plantedidC = cur.fetchone()
 
                 if plantedidC[0] == 'j':
-                    colheitaC = insecC + datetime.timedelta(hours=8)
+                    colheitaC = insec + datetime.timedelta(hours=8)
+                    plantaC = 'Jujubas plantadas'
                 elif plantedidC[0] == 'ad':
-                    colheitaC = insecC + datetime.timedelta(hours=12)
+                    colheitaC = insec + datetime.timedelta(hours=12)
+                    plantaC = 'Algodão-doce plantado'
                 elif plantedidC[0] == 'm':
-                    colheitaC = insecC + datetime.timedelta(hours=24)
+                    colheitaC = insec + datetime.timedelta(hours=24)
+                    plantaC = 'Marshmallow plantado'
 
                 resultA = colheita - datetime.datetime.now()
                 resultB = colheitaB - datetime.datetime.now()
@@ -1323,36 +1708,45 @@ async def myfarm(ctx):
                 formatarC = ':'.join(str(resultC).split(':')[:2])
 
                 if resultA < datetime.timedelta(hours=10):
-                    formatarA = f'0{formatar}'
+                    if resultA > datetime.timedelta(hours=0):
+                        formatarA = f'0{formatarA}'
+                    else:
+                        formatarA = f'Pronto para colher!'
                 
                 if resultB < datetime.timedelta(hours=10):
-                    formatarB = f'0{formatar}'
+                    if resultB > datetime.timedelta(hours=0):
+                        formatarB = f'0{formatarB}'
+                    else:
+                        formatarB = f'Pronto para colher!'
 
                 if resultC < datetime.timedelta(hours=10):
-                    formatarC = f'0{formatar}'
+                    if resultC > datetime.timedelta(hours=0):
+                        formatarC = f'0{formatarC}'
+                    else:
+                        formatarC = f'Pronto para colher!'
 
                 emb = discord.Embed(
                 title = 'PROPRIEDADE DE',
                 description = f'''
-        {ctx.author.mention}
+{ctx.author.mention}
 
-        **SEMENTES:**
-        > Jujuba: `{sementes[0][0]} semente(s)`
-        > Algodão-doce: `{sementes[0][1]} semente(s)`
-        > Marshmallow: `{sementes[0][2]} semente(s)`
+**SEMENTES:**
+> Jujuba: `{sementes[0][0]} semente(s)`
+> Algodão-doce: `{sementes[0][1]} semente(s)`
+> Marshmallow: `{sementes[0][2]} semente(s)`
 
-        **LOTES:**
-        > Lote A `adquirido`
-        > Lote B `adquirido`
-        > Lote C `adquirido`
+**LOTES:**
+> Lote A `adquirido`
+> Lote B `adquirido`
+> Lote C `adquirido`
 
-        **PLANTAÇÕES:**
-        > Lote A: `em uso`
-        > Tempo que falta: `{formatarA}`
-        > Lote B: `em uso`
-        > Tempo que falta: `{formatarB}`
-        > Lote C: `em uso`
-        > Tempo que falta: `{formatarC}`
+**PLANTAÇÕES:**
+> Lote A: `{planta}`
+> Tempo que falta: `{formatarA}`
+> Lote B: `{plantaB}`
+> Tempo que falta: `{formatarB}`
+> Lote C: `{plantaC}`
+> Tempo que falta: `{formatarC}`
 
 
                 ''',
@@ -1370,21 +1764,10 @@ async def myfarm(ctx):
     else:
         await ctx.send('Canal errado, bobinho(a)!')
 
-@client.command()
-async def buyb(ctx):
-    conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
-    cur = conn.cursor()
-
-    cur.execute("INSERT INTO fazenda (iduser, lotes, loteid, nome) VALUES (%s, 1, 'B', %s)", (ctx.author.id, ctx.author.name))
-    conn.commit()
-    cur.close()
-    conn.close()
-    await ctx.send('Compra realizada com sucesso!')
 
 
-        
 
-
+    
 
 
 
@@ -1392,25 +1775,38 @@ async def buyb(ctx):
 @client.command()
 async def plantar(ctx, quant, lote):
     channel = ctx.channel
+
     if channel.name == 'jujuba-8h':
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
+        
 
         cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
         resultado = cur.fetchone()
         
         if resultado[0] == 0:
-            await ctx.send(f'{ctx.author.mention}, você não tem lotes de terra disponiveis para plantar')
+            await ctx.send(f'{ctx.author.mention}, esse lote não está disponível para plantar!')
         elif resultado[0] == 1:
 
-            cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s", (ctx.author.id,))
+            cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
             resultado2 = cur.fetchone()
-            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= 1000:
 
-                await ctx.send(f'{ctx.author.mention} | plantando...')
+            if lote.upper() == 'A':
+                maximo = 1000
+            elif lote.upper() == 'B':
+                maximo = 5000
+            elif lote.upper() == 'C':
+                maximo = 15000
+
+            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= maximo:
+
+                await ctx.send(f'**{ctx.author.mention}, está PLANTANDO...**')
+                
+
                 total = resultado[0] - 1
                 total2 = resultado2[0] - int(quant)
-                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='j', s_j=%s WHERE iduser=%s AND loteid=%s", (total, total2, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='j' WHERE iduser=%s AND loteid=%s", (total, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET s_j=%s WHERE iduser=%s AND loteid='A'", (total2, ctx.author.id))
 
                 datanow = datetime.datetime.now()
                 soma = datanow + datetime.timedelta(hours=8)
@@ -1419,16 +1815,44 @@ async def plantar(ctx, quant, lote):
 
                 cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid=%s", (int(quant), dataa, horaa, ctx.author.id, lote.upper()))
                 conn.commit()
+                await asyncio.sleep(10)
+                emb = discord.Embed(
+                title = 'VOCÊ PLANTOU JUJUBAS',
+                description = f'''
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
 
-                cur.close()
-                conn.close()
+{ctx.author.mention},
+    
+> Você plantou `{quant}` sementes de jujuba no seu lote `{lote.upper()}`
+> 
+> Use o comando `!myfarm` para mais informações.
+
+
+**Boa sorte na colheita!!**
+
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+                
+
+                
 
             elif resultado2[0] == 0:
                 await ctx.send(f'{ctx.author.mention}, você não tem sementes!')
             elif int(quant) < 50:
                 await ctx.send(f'{ctx.author.mention}, você precisa de pelo menos 50 sementes para plantar!')
-            elif int(quant) > 1000:
+            elif int(quant) > 1000 and lote == 'A':
                 await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes nesse lote!')
+            elif int(quant) > 5000 and lote == 'B':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 5000 sementes nesse lote!')
+            elif int(quant) > 15000 and lote == 'C':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 15000 sementes nesse lote!')
 
             else:
                 await ctx.send(f'{ctx.author.mention}, você não tem essa quantidade toda de sementes!')
@@ -1436,11 +1860,159 @@ async def plantar(ctx, quant, lote):
 
 
     elif channel.name == 'algodão-doce-12h':
-        pass
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado = cur.fetchone()
+        
+        if resultado[0] == 0:
+            await ctx.send(f'{ctx.author.mention}, esse lote não está disponível para plantar!')
+        elif resultado[0] == 1:
+
+            cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
+            resultado2 = cur.fetchone()
+
+            if lote.upper() == 'A':
+                maximo = 1000
+            elif lote.upper() == 'B':
+                maximo = 5000
+            elif lote.upper() == 'C':
+                maximo = 15000
+
+            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= maximo:
+
+                await ctx.send(f'**{ctx.author.mention}, está PLANTANDO...**')
+                total = resultado[0] - 1
+                total2 = resultado2[0] - int(quant)
+                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='ad' WHERE iduser=%s AND loteid=%s", (total, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (total2, ctx.author.id))
+
+                datanow = datetime.datetime.now()
+                soma = datanow + datetime.timedelta(hours=8)
+                dataa = datanow.strftime("%d/%m/%Y")
+                horaa = datanow.strftime("%H:%M")
+
+                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid=%s", (int(quant), dataa, horaa, ctx.author.id, lote.upper()))
+                conn.commit()
+                await asyncio.sleep(10)
+                emb = discord.Embed(
+                title = 'VOCÊ PLANTOU ALGODÕES-DOCES',
+                description = f'''
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+
+{ctx.author.mention},
+    
+> Você plantou `{quant}` sementes de algodão-doce no seu lote `{lote.upper()}`
+> 
+> Use o comando `!myfarm` para mais informações.
+
+
+**Boa sorte na colheita!!**
+
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+
+                
+
+            elif resultado2[0] == 0:
+                await ctx.send(f'{ctx.author.mention}, você não tem sementes!')
+            elif int(quant) < 50:
+                await ctx.send(f'{ctx.author.mention}, você precisa de pelo menos 50 sementes para plantar!')
+            elif int(quant) > 1000 and lote == 'A':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes nesse lote!')
+            elif int(quant) > 5000 and lote == 'B':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 5000 sementes nesse lote!')
+            elif int(quant) > 15000 and lote == 'C':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 15000 sementes nesse lote!')
+
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem essa quantidade toda de sementes!')
 
 
     elif channel.name == 'marshmallow-24h':
-        pass
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado = cur.fetchone()
+        
+        if resultado[0] == 0:
+            await ctx.send(f'{ctx.author.mention}, esse lote não está disponível para plantar!')
+        elif resultado[0] == 1:
+
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, lote.upper()))
+            resultado2 = cur.fetchone()
+
+            if lote.upper() == 'A':
+                maximo = 1000
+            elif lote.upper() == 'B':
+                maximo = 5000
+            elif lote.upper() == 'C':
+                maximo = 15000
+
+            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= maximo:
+
+                await ctx.send(f'**{ctx.author.mention}, está PLANTANDO...**')
+                total = resultado[0] - 1
+                total2 = resultado2[0] - int(quant)
+                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='m' WHERE iduser=%s AND loteid=%s", (total, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (total2, ctx.author.id))
+
+                datanow = datetime.datetime.now()
+                soma = datanow + datetime.timedelta(hours=8)
+                dataa = datanow.strftime("%d/%m/%Y")
+                horaa = datanow.strftime("%H:%M")
+
+                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid=%s", (int(quant), dataa, horaa, ctx.author.id, lote.upper()))
+                conn.commit()
+                await asyncio.sleep(10)
+                emb = discord.Embed(
+                title = 'VOCÊ PLANTOU MARSHMALLOWS',
+                description = f'''
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+
+{ctx.author.mention},
+    
+> Você plantou `{quant}` sementes de marshmallow no seu lote `{lote.upper()}`
+> 
+> Use o comando `!myfarm` para mais informações.
+
+
+**Boa sorte na colheita!!**
+
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+
+                
+
+            elif resultado2[0] == 0:
+                await ctx.send(f'{ctx.author.mention}, você não tem sementes!')
+            elif int(quant) < 50:
+                await ctx.send(f'{ctx.author.mention}, você precisa de pelo menos 50 sementes para plantar!')
+            elif int(quant) > 1000 and lote == 'A':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes nesse lote!')
+            elif int(quant) > 5000 and lote == 'B':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 5000 sementes nesse lote!')
+            elif int(quant) > 15000 and lote == 'C':
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 15000 sementes nesse lote!')
+
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem essa quantidade toda de sementes!')
 
     else:
         await ctx.send('Canal errado, bobinho(a)!')
@@ -1458,13 +2030,18 @@ async def colher(ctx, lote):
         cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
         resultado_lotes = cur.fetchone()
 
+        cur.execute("SELECT plantedid FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado_plantedid = cur.fetchone()
+
+
 
         if resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
         
-
+        elif resultado_plantedid[0] != 'j':
+            await ctx.send(f'{ctx.author.mention}, você não plantou **jujubas** nesse lote! \nUse `!myfarm` para saber o que plantou')
         
-        elif resultado_lotes[0] == 0:
+        elif resultado_lotes[0] == 0 and resultado_plantedid[0] == 'j':
             cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
             resultado_datas = cur.fetchmany()
             dataa = resultado_datas[0][0]
@@ -1480,13 +2057,15 @@ async def colher(ctx, lote):
             insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
             colheita = insec + datetime.timedelta(hours=8)
             datenow = datetime.datetime.now()
-           
-            if datenow > colheita:
+            vencida = colheita + datetime.timedelta(hours=72)
+            if datenow >= colheita and datenow < vencida:
+                await ctx.send(f'**{ctx.author.mention}, está COLHENDO...**')
                 cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
                 cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
                 planted = cur.fetchone()
 
-                colheita_valor = ceil(planted[0] / random.randint(10, 25)) + (planted[0] * 0.1)
+                colheita_valor = ceil(planted[0] / random.randint(20, 40)) + (planted[0] * 0.1)
+                lucro = colheita_valor - (planted[0] * 0.1)
                 
                 cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
                 cookie_antg = cur.fetchone()
@@ -1496,23 +2075,290 @@ async def colher(ctx, lote):
                 cur.execute("UPDATE bank SET cookies=%s WHERE iduser = %s", (total, ctx.author.id))
                 cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
 
-                await ctx.send(f'{ctx.author.mention}, você ganhou {colheita_valor:.0f} cookies nessa colheita!')
-
                 conn.commit()
+                await asyncio.sleep(10)
+                emb = discord.Embed(
+                title = 'VOCÊ COLHEU JUJUBAS',
+                description = f'''
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+
+{ctx.author.mention},
+    
+> Você colheu suas jujubas no lote `{lote.upper()}`
+> 
+> Parabéns! Ganhaste `{colheita_valor:.0f} cookies`!!
+> 
+> Seu lucro: `{lucro:.0f} cookies`
+
+
+Use o comando `!myfarm` para mais informações.
+
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
                 
             elif datenow < colheita:
                 result = colheita - datetime.datetime.now()
                 formatar = ':'.join(str(result).split(':')[:2])
                 await ctx.send(f'{ctx.author.mention}, ainda não está na hora de colher!')
-                """ if result < datetime.timedelta(hours=10):
+                if result < datetime.timedelta(hours=10):
                     await ctx.send(f'Tempo que falta para colher: `0{formatar}`')
                 else:
-                    await ctx.send(f'Tempo que falta para colher: `{formatar}`') """
+                    await ctx.send(f'Tempo que falta para colher: `{formatar}`')
+            elif vencida <= datenow:
+                emb = discord.Embed(
+                title = ':skull_crossbones: AS JUJUBAS ESTÃO TODAS MORTAS :skull_crossbones:',
+                description = f'''
+{ctx.author.mention},
+    
+> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `{lote.upper()}`
+> 
+> Não ganhaste cookies nessa colheita :(
+
+
+**Lembre-se: `jujubas têm até 3 dias para serem colhidas`**
+
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+
+
+
+
+
+
 
     elif channel.name == 'algodão-doce-12h':
-        pass
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado_lotes = cur.fetchone()
+        cur.execute("SELECT plantedid FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado_plantedid = cur.fetchone()
+
+        if resultado_lotes[0] == 1:
+            await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
+        
+        elif resultado_plantedid[0] != 'ad':
+            await ctx.send(f'{ctx.author.mention}, você não plantou **algodões-doces** nesse lote! \nUse `!myfarm` para saber o que plantou')
+        
+        elif resultado_lotes[0] == 0 and resultado_plantedid[0] == 'ad':
+            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+            resultado_datas = cur.fetchmany()
+            dataa = resultado_datas[0][0]
+            horaa = resultado_datas[0][1]
+            
+            dia = dataa[:2]
+            mes = dataa[3:5]
+            ano = dataa[6:]
+            
+            horas = horaa[:2]
+            minutos = horaa[3:]
+
+            insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
+            colheita = insec + datetime.timedelta(hours=12)
+            datenow = datetime.datetime.now()
+            vencida = colheita + datetime.timedelta(hours=48)
+            if datenow >= colheita and datenow < vencida:
+                await ctx.send(f'**{ctx.author.mention}, está COLHENDO...**')
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                planted = cur.fetchone()
+
+                colheita_valor = ceil(planted[0] / random.randint(8, 15)) + (planted[0] * 0.2)
+                lucro = colheita_valor - (planted[0] * 0.2)
+                
+                cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
+                cookie_antg = cur.fetchone()
+
+                total = colheita_valor + cookie_antg[0]
+                
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser = %s", (total, ctx.author.id))
+                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+
+                conn.commit()
+                await asyncio.sleep(10)
+                emb = discord.Embed(
+                title = 'VOCÊ COLHEU ALGODÕES-DOCES',
+                description = f'''
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+
+{ctx.author.mention},
+    
+> Você colheu seus algodões-doces no lote `{lote.upper()}`
+> 
+> Parabéns! Ganhaste `{colheita_valor:.0f} cookies`!!
+> 
+> Seu lucro: `{lucro:.0f} cookies`
+
+
+Use o comando `!myfarm` para mais informações.
+
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+                
+            elif datenow < colheita:
+                result = colheita - datetime.datetime.now()
+                formatar = ':'.join(str(result).split(':')[:2])
+                await ctx.send(f'{ctx.author.mention}, ainda não está na hora de colher!')
+                if result < datetime.timedelta(hours=10):
+                    await ctx.send(f'Tempo que falta para colher: `0{formatar}`')
+                else:
+                    await ctx.send(f'Tempo que falta para colher: `{formatar}`')
+            elif vencida <= datenow:
+                emb = discord.Embed(
+                title = ':skull_crossbones: OS ALGODÕES-DOCES ESTÃO TODOS MORTOS :skull_crossbones:',
+                description = f'''
+{ctx.author.mention},
+    
+> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `{lote.upper()}`
+> 
+> Não ganhaste cookies nessa colheita :(
+
+
+**Lembre-se: `algodões-doces têm até 2 dias para serem colhidos`**
+
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+
+
+
+
+
+
     elif channel.name == 'marshmallow-24h':
-        pass
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado_lotes = cur.fetchone()
+
+        cur.execute("SELECT plantedid FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        resultado_plantedid = cur.fetchone()
+
+        if resultado_lotes[0] == 1:
+            await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
+        
+        elif resultado_plantedid[0] != 'm':
+            await ctx.send(f'{ctx.author.mention}, você não plantou **marshmallows** nesse lote! \nUse `!myfarm` para saber o que plantou')
+        
+        elif resultado_lotes[0] == 0 and resultado_plantedid[0] == 'm':
+            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+            resultado_datas = cur.fetchmany()
+            dataa = resultado_datas[0][0]
+            horaa = resultado_datas[0][1]
+            
+            dia = dataa[:2]
+            mes = dataa[3:5]
+            ano = dataa[6:]
+            
+            horas = horaa[:2]
+            minutos = horaa[3:]
+
+            insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
+            colheita = insec + datetime.timedelta(hours=24)
+            datenow = datetime.datetime.now()
+            vencida = colheita + datetime.timedelta(hours=24)
+            if datenow >= colheita and datenow < vencida:
+                await ctx.send(f'**{ctx.author.mention}, está COLHENDO...**')
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                planted = cur.fetchone()
+
+                colheita_valor = ceil(planted[0] / random.randint(2, 5)) + (planted[0] * 2)
+                lucro = colheita_valor - (planted[0] * 2)
+                
+                cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
+                cookie_antg = cur.fetchone()
+
+                total = colheita_valor + cookie_antg[0]
+                
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser = %s", (total, ctx.author.id))
+                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+
+                conn.commit()
+                await asyncio.sleep(10)
+                emb = discord.Embed(
+                title = 'VOCÊ COLHEU MARSHMALLOWS',
+                description = f'''
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+
+{ctx.author.mention},
+    
+> Você colheu seus marshmallows no lote `{lote.upper()}`
+> 
+> Parabéns! Ganhaste `{colheita_valor:.0f} cookies`!!
+> 
+> Seu lucro: `{lucro:.0f} cookies`
+
+
+Use o comando `!myfarm` para mais informações.
+
+🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
+                
+            elif datenow < colheita:
+                result = colheita - datetime.datetime.now()
+                formatar = ':'.join(str(result).split(':')[:2])
+                await ctx.send(f'{ctx.author.mention}, ainda não está na hora de colher!')
+                if result < datetime.timedelta(hours=10):
+                    await ctx.send(f'Tempo que falta para colher: `0{formatar}`')
+                else:
+                    await ctx.send(f'Tempo que falta para colher: `{formatar}`')
+            elif vencida <= datenow:
+                emb = discord.Embed(
+                title = ':skull_crossbones: OS MARSHMALLOWS ESTÃO TODOS MORTOS :skull_crossbones:',
+                description = f'''
+{ctx.author.mention},
+    
+> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `{lote.upper()}`
+> 
+> Não ganhaste cookies nessa colheita :(
+
+
+**Lembre-se: `marshmallows têm até 3 dias para serem colhidos`**
+
+                    ''',
+                colour = 65280
+                )
+
+                
+
+                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                await ctx.send(embed = emb)
 
     else:
         await ctx.send('Canal errado, bobinho(a)!')
@@ -2362,4 +3208,4 @@ async def unmute(ctx, member: discord.Member):
 
 
 
-client.run('ODM2MDQyMTU0NTk3NDE3MDEw.YIYO7g.eHFjRyngwaTnwWLVgEDQcee3Yhk')
+client.run(TOKEN)
