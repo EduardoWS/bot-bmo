@@ -1,10 +1,12 @@
 import discord
+
 from discord.ext import commands, tasks
 import random
-import time
+
 from time import sleep
 import datetime
-from math import ceil
+
+from math import ceil, floor
 import json
 import os
 import asyncio
@@ -46,65 +48,74 @@ async def activity(ctx, *, activity):
     await client.change_presence(activity=discord.Game(name=activity))
     await ctx.send(f'Status atualizado para: `Jogando {activity}`')
 
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandOnCooldown):
+        msg = '**Vai com Calma!!** \nVocê poderá usar esse comando de novo em `{:.2f}s`' .format(error.retry_after)
+        await ctx.send(msg)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @client.listen('on_message')
 async def on_message(message):
     channel = message.channel
-    if channel.name == '💸┃loja':
-        if message.author == client.user:
-            await asyncio.sleep(20) 
-            await message.delete()
-        else:
-            await asyncio.sleep(20) 
-            await message.delete()
+    if message.guild:
 
-    """ elif channel.name == 'jujuba-8h':
-        if message.author == client.user:
-            await asyncio.sleep(60) 
-            await message.delete()
-        else:
-            await asyncio.sleep(60) 
-            await message.delete()
+        if channel.name == '💸┃loja' or channel.name == '🎫┃recepção':
+            if message.author == client.user:
+                await asyncio.sleep(20) 
+                await message.delete()
+            else:
+                await asyncio.sleep(20) 
+                await message.delete()
+        elif channel.name == '🎨┃galeria':
+            if message.author:
+                guild = message.guild
+                tRole = discord.utils.get(guild.roles, name='Ticket Galeria')
+                await message.author.remove_roles(tRole)
+        elif channel.name == '💲┃obras-à-venda':
+            if message.author:
+                guild = message.guild
+                tRole = discord.utils.get(guild.roles, name='Ticket Obras à Venda')
+                await message.author.remove_roles(tRole)
+            
+            if 'Continue apoiando seus artistas favoritos' in message.content and message.author.bot:
+                await asyncio.sleep(20)
+                await message.delete()
 
-    elif channel.name == 'algodão-doce-12h':
-        if message.author == client.user:
-            await asyncio.sleep(60) 
-            await message.delete()
-        else:
-            await asyncio.sleep(60) 
-            await message.delete()
 
-    elif channel.name == 'marshmallow-24h':
-        if message.author == client.user:
-            await asyncio.sleep(60) 
-            await message.delete()
-        else:
-            await asyncio.sleep(60) 
-            await message.delete() """
+            if message.author == client.user:
+                pass
+            else:
+                await asyncio.sleep(20)
+                await message.delete()
+        elif channel.name == '💡┃ideias-desenhos':
+            if message.author:
+                guild = message.guild
+                tRole = discord.utils.get(guild.roles, name='Ticket Ideias Desenhos')
+                await message.author.remove_roles(tRole)
+
 
 
 
 # VV ====================== BANCO DE DADOS Postgres ====================== VV
 
-db_host = "ec2-54-166-167-192.compute-1.amazonaws.com"
-db_user = "mrjebrcdeikwqs"
-db_name = "d47hnkn5vcli2n"
-db_pass = "8dfd4737ba4fabd6c43e008b02f3d446b8e1f75a228d8c50c874b81ebb6b3307"
+db_host = ""
+db_user = ""
+db_name = ""
+db_pass = ""
 
-
-como_usar = """
-    conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
-
-    cur = conn.cursor()
-
-    cur.execute("INSERT INTO bank (cookies, iduser, nome) VALUES (100, 12345, 'teste')")
-    conn.commit()
-
-    cur.close()
-
-    conn.close()
-                 """
 
 
 
@@ -190,7 +201,7 @@ async def mybank(ctx):
 
 
     if resultado == []:
-        await ctx.send('Você não tem uma conta criada! Crie uma conta com `!criarconta`')
+        await ctx.send(f'{ctx.author.mention}, você não tem uma conta criada! Crie uma conta com `!criarconta`')
 
     else:
         for r in resultado:
@@ -209,8 +220,7 @@ ID da conta: ||`{idu}`||
         colour = 16715320
         )
 
-        emb.set_author(name='BMO',
-        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+        
 
         emb.set_thumbnail(url=ctx.author.avatar_url)
         await ctx.send(embed = emb)
@@ -266,7 +276,7 @@ async def pay(ctx, quant, member: discord.Member):
                 conn.commit()
 
                 
-                await ctx.send(f'Transação realizada com sucesso! Novo saldo: `{total2} cookies`')
+                await ctx.send(f'{ctx.author.mention}, transação realizada com sucesso! Novo saldo: `{total2} cookies`')
     cur.close()
     conn.close()
 
@@ -361,9 +371,9 @@ Para ver quantas sementes e quais lotes você possui, digite `!myfarm`
 
 > Existem 3 canais para plantar e colher: {canalj.mention}, {canalad.mention} e {canalm.mention}.
 > 
-> Você só poderá plantar jujubas no canal `jujuba-8h`
-> Você só poderá plantar algodão doce no canal `algodão-doce-12h`
-> Você só poderá plantar marshmallow no canal `marshmallow-24h`
+> Você só poderá plantar jujubas no canal `jujuba-8h` e no `lote A`
+> Você só poderá plantar algodão doce no canal `algodão-doce-12h` e no `lote B`
+> Você só poderá plantar marshmallow no canal `marshmallow-24h` e no `lote C`
 > 
 > Jujubas demoram 8 horas para você poder colher
 > Algodões-doces demoram 12 horas para você poder colher
@@ -386,14 +396,8 @@ Para ver quantas sementes e quais lotes você possui, digite `!myfarm`
 > 
 > Ex: `!colher A`
 > 
-> Lucro de 1000 jujubas:
-> `25 a 50 cookies`
-> 
-> Lucro de 1000 algodões-doces:
-> `67 a 125 cookies`
-> 
-> Lucro de 1000 marshmallows:
-> `200 a 500 cookies`
+> Use `!lucrof` para ver os lucros de cada semente
+
 
 > Ao plantar jujubas, você terá `3 dias` para colher. Depois disso, as jujubas apodrecerão e você perderá tudo.
 > 
@@ -565,6 +569,24 @@ Você comprou `1000 sementes de algodão-doce`
                 conn.commit()
             else:
                 await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        elif produto == '1500ad':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 300:
+                totald = da[0] - 300
+                totals = sa[0] + 1500
+                cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1000 sementes de algodão-doce`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
         
         #MARSHMALLOW============
         elif produto == '50m':
@@ -639,6 +661,24 @@ Você comprou `1000 sementes de marshmallow`
             else:
                 await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
         
+        elif produto == '2000m':
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            da = cur.fetchone()
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id,))
+            sa = cur.fetchone()
+            
+            if da[0] >= 4000:
+                totald = da[0] - 4000
+                totals = sa[0] + 2000
+                cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `2000 sementes de marshmallow`
+                ''')
+                conn.commit()
+            else:
+                await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
 
         #LOTES
         elif produto == 'loteb':
@@ -648,8 +688,8 @@ Você comprou `1000 sementes de marshmallow`
             if lote == None:
                 cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
                 da = cur.fetchone()
-                if da[0] >= 25000:
-                    totald = da[0] - 25000
+                if da[0] >= 5890:
+                    totald = da[0] - 5890
                     cur.execute("INSERT INTO fazenda (iduser, lotes, loteid, nome) VALUES (%s, 1, 'B', %s)", (ctx.author.id, ctx.author.name))
                     cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
                     await ctx.send(f'{ctx.author.mention}, compra realizada com sucesso!!')
@@ -672,9 +712,9 @@ Você comprou `1000 sementes de marshmallow`
                 if loteC == None:
                     cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
                     da = cur.fetchone()
-                    if da[0] >= 25000:
-                        totald = da[0] - 25000
-                        cur.execute("INSERT INTO fazenda (iduser, lotes, loteid, nome) VALUES (%s, 1, 'B', %s)", (ctx.author.id, ctx.author.name))
+                    if da[0] >= 47390:
+                        totald = da[0] - 47390
+                        cur.execute("INSERT INTO fazenda (iduser, lotes, loteid, nome) VALUES (%s, 1, 'C', %s)", (ctx.author.id, ctx.author.name))
                         cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
                         await ctx.send(f'{ctx.author.mention}, compra realizada com sucesso!!')
                         conn.commit()
@@ -1359,46 +1399,46 @@ async def myfarm(ctx):
 
 
 
-        elif plantedA[0] == 1 and plantedB[0] == 1 and plantedC[0] == 0:
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
-                resultado_datas = cur.fetchmany()
-                dataa = resultado_datas[0][0]
-                horaa = resultado_datas[0][1]
-                
-                dia = dataa[:2]
-                mes = dataa[3:5]
-                ano = dataa[6:]
-                
-                horas = horaa[:2]
-                minutos = horaa[3:]
+            elif plantedA[0] == 1 and plantedB[0] == 1 and plantedC[0] == 0:
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
+                    resultado_datas = cur.fetchmany()
+                    dataa = resultado_datas[0][0]
+                    horaa = resultado_datas[0][1]
+                    
+                    dia = dataa[:2]
+                    mes = dataa[3:5]
+                    ano = dataa[6:]
+                    
+                    horas = horaa[:2]
+                    minutos = horaa[3:]
 
-                insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
-                plantedidC = cur.fetchone()
-                
-                if plantedidC[0] == 'j':
-                    colheita = insec + datetime.timedelta(hours=8)
-                    planta = 'Jujubas plantadas'
-                elif plantedidC[0] == 'ad':
-                    colheita = insec + datetime.timedelta(hours=12)
-                    planta = 'Algodão-doce plantado'
-                elif plantedidC[0] == 'm':
-                    colheita = insec + datetime.timedelta(hours=24)
-                    planta = 'Marshmallow plantado'
-                
+                    insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
+                    plantedidC = cur.fetchone()
+                    
+                    if plantedidC[0] == 'j':
+                        colheita = insec + datetime.timedelta(hours=8)
+                        planta = 'Jujubas plantadas'
+                    elif plantedidC[0] == 'ad':
+                        colheita = insec + datetime.timedelta(hours=12)
+                        planta = 'Algodão-doce plantado'
+                    elif plantedidC[0] == 'm':
+                        colheita = insec + datetime.timedelta(hours=24)
+                        planta = 'Marshmallow plantado'
+                    
 
-                result = colheita - datetime.datetime.now()
-                formatar = ':'.join(str(result).split(':')[:2])
-                if result < datetime.timedelta(hours=10):
-                    if result > datetime.timedelta(hours=0):
-                        formatar = f'0{formatar}'
-                    else:
-                        formatar = f'Pronto para colher!'
+                    result = colheita - datetime.datetime.now()
+                    formatar = ':'.join(str(result).split(':')[:2])
+                    if result < datetime.timedelta(hours=10):
+                        if result > datetime.timedelta(hours=0):
+                            formatar = f'0{formatar}'
+                        else:
+                            formatar = f'Pronto para colher!'
 
 
-                emb = discord.Embed(
-                title = 'PROPRIEDADE DE',
-                description = f'''
+                    emb = discord.Embed(
+                    title = 'PROPRIEDADE DE',
+                    description = f'''
 {ctx.author.mention}
 
 **SEMENTES:**
@@ -1417,86 +1457,86 @@ async def myfarm(ctx):
 > Lote C: `{planta}`
 > Tempo que falta: `{formatar}`
 
-                ''',
-                colour = 65280
-                )
+                    ''',
+                    colour = 65280
+                    )
 
-                
-                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
-                await ctx.send(embed = emb)
+                    
+                    emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
+                    await ctx.send(embed = emb)
 
         
-        elif plantedA[0] == 0 and plantedB[0] == 1 and plantedC[0] == 0:
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
-                resultado_datasA = cur.fetchmany()
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
-                resultado_datasC = cur.fetchmany()
-                
-                dataa = resultado_datasA[0][0]
-                horaa = resultado_datasA[0][1]
-                dataC = resultado_datasC[0][0]
-                horaC = resultado_datasC[0][1]
-                
-                dia = dataa[:2]
-                mes = dataa[3:5]
-                ano = dataa[6:]
-                diaC = dataC[:2]
-                mesC = dataC[3:5]
-                anoC = dataC[6:]
-                
-                horas = horaa[:2]
-                minutos = horaa[3:]
-                horasC = horaC[:2]
-                minutosC = horaC[3:]
+            elif plantedA[0] == 0 and plantedB[0] == 1 and plantedC[0] == 0:
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
+                    resultado_datasA = cur.fetchmany()
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
+                    resultado_datasC = cur.fetchmany()
+                    
+                    dataa = resultado_datasA[0][0]
+                    horaa = resultado_datasA[0][1]
+                    dataC = resultado_datasC[0][0]
+                    horaC = resultado_datasC[0][1]
+                    
+                    dia = dataa[:2]
+                    mes = dataa[3:5]
+                    ano = dataa[6:]
+                    diaC = dataC[:2]
+                    mesC = dataC[3:5]
+                    anoC = dataC[6:]
+                    
+                    horas = horaa[:2]
+                    minutos = horaa[3:]
+                    horasC = horaC[:2]
+                    minutosC = horaC[3:]
 
-                insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
-                insecC = datetime.datetime(int(anoC), int(mesC), int(diaC), int(horasC), int(minutosC))
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
-                plantedidA = cur.fetchone()
-                
-                if plantedidA[0] == 'j':
-                    colheita = insec + datetime.timedelta(hours=8)
-                    planta = 'Jujubas plantadas'
-                elif plantedidA[0] == 'ad':
-                    colheita = insec + datetime.timedelta(hours=12)
-                    planta = 'Algodão-doce plantado'
-                elif plantedidA[0] == 'm':
-                    colheita = insec + datetime.timedelta(hours=24)
-                    planta = 'Marshmallow plantado'
+                    insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
+                    insecC = datetime.datetime(int(anoC), int(mesC), int(diaC), int(horasC), int(minutosC))
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
+                    plantedidA = cur.fetchone()
+                    
+                    if plantedidA[0] == 'j':
+                        colheita = insec + datetime.timedelta(hours=8)
+                        planta = 'Jujubas plantadas'
+                    elif plantedidA[0] == 'ad':
+                        colheita = insec + datetime.timedelta(hours=12)
+                        planta = 'Algodão-doce plantado'
+                    elif plantedidA[0] == 'm':
+                        colheita = insec + datetime.timedelta(hours=24)
+                        planta = 'Marshmallow plantado'
 
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
-                plantedidC = cur.fetchone()
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
+                    plantedidC = cur.fetchone()
 
-                if plantedidC[0] == 'j':
-                    colheitaC = insec + datetime.timedelta(hours=8)
-                    plantaC = 'Jujubas plantadas'
-                elif plantedidC[0] == 'ad':
-                    colheitaC = insec + datetime.timedelta(hours=12)
-                    plantaC = 'Algodão-doce plantado'
-                elif plantedidC[0] == 'm':
-                    colheitaC = insec + datetime.timedelta(hours=24)
-                    plantaC = 'Marshmallow plantado'
+                    if plantedidC[0] == 'j':
+                        colheitaC = insec + datetime.timedelta(hours=8)
+                        plantaC = 'Jujubas plantadas'
+                    elif plantedidC[0] == 'ad':
+                        colheitaC = insec + datetime.timedelta(hours=12)
+                        plantaC = 'Algodão-doce plantado'
+                    elif plantedidC[0] == 'm':
+                        colheitaC = insec + datetime.timedelta(hours=24)
+                        plantaC = 'Marshmallow plantado'
 
-                resultA = colheita - datetime.datetime.now()
-                resultC = colheitaC - datetime.datetime.now()
-                formatarA = ':'.join(str(resultA).split(':')[:2])
-                formatarC = ':'.join(str(resultC).split(':')[:2])
+                    resultA = colheita - datetime.datetime.now()
+                    resultC = colheitaC - datetime.datetime.now()
+                    formatarA = ':'.join(str(resultA).split(':')[:2])
+                    formatarC = ':'.join(str(resultC).split(':')[:2])
 
-                if resultA < datetime.timedelta(hours=10):
-                    if resultA > datetime.timedelta(hours=0):
-                        formatarA = f'0{formatarA}'
-                    else:
-                        formatarA = f'Pronto para colher!'
+                    if resultA < datetime.timedelta(hours=10):
+                        if resultA > datetime.timedelta(hours=0):
+                            formatarA = f'0{formatarA}'
+                        else:
+                            formatarA = f'Pronto para colher!'
 
-                if resultC < datetime.timedelta(hours=10):
-                    if resultC > datetime.timedelta(hours=0):
-                        formatarC = f'0{formatarC}'
-                    else:
-                        formatarC = f'Pronto para colher!'
+                    if resultC < datetime.timedelta(hours=10):
+                        if resultC > datetime.timedelta(hours=0):
+                            formatarC = f'0{formatarC}'
+                        else:
+                            formatarC = f'Pronto para colher!'
 
-                emb = discord.Embed(
-                title = 'PROPRIEDADE DE',
-                description = f'''
+                    emb = discord.Embed(
+                    title = 'PROPRIEDADE DE',
+                    description = f'''
 {ctx.author.mention}
 
 **SEMENTES:**
@@ -1517,85 +1557,85 @@ async def myfarm(ctx):
 > Tempo que falta: `{formatarC}`
 
 
-                ''',
-                colour = 65280
-                )
+                    ''',
+                    colour = 65280
+                    )
 
-                
-                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
-                await ctx.send(embed = emb)
+                    
+                    emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
+                    await ctx.send(embed = emb)
 
-        elif plantedA[0] == 1 and plantedB[0] == 0 and plantedC[0] == 0:
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
-                resultado_datasB = cur.fetchmany()
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
-                resultado_datasC = cur.fetchmany()
-                
-                dataa = resultado_datasB[0][0]
-                horaa = resultado_datasB[0][1]
-                dataC = resultado_datasC[0][0]
-                horaC = resultado_datasC[0][1]
-                
-                dia = dataa[:2]
-                mes = dataa[3:5]
-                ano = dataa[6:]
-                diaC = dataC[:2]
-                mesC = dataC[3:5]
-                anoC = dataC[6:]
-                
-                horas = horaa[:2]
-                minutos = horaa[3:]
-                horasC = horaC[:2]
-                minutosC = horaC[3:]
+            elif plantedA[0] == 1 and plantedB[0] == 0 and plantedC[0] == 0:
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
+                    resultado_datasB = cur.fetchmany()
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
+                    resultado_datasC = cur.fetchmany()
+                    
+                    dataa = resultado_datasB[0][0]
+                    horaa = resultado_datasB[0][1]
+                    dataC = resultado_datasC[0][0]
+                    horaC = resultado_datasC[0][1]
+                    
+                    dia = dataa[:2]
+                    mes = dataa[3:5]
+                    ano = dataa[6:]
+                    diaC = dataC[:2]
+                    mesC = dataC[3:5]
+                    anoC = dataC[6:]
+                    
+                    horas = horaa[:2]
+                    minutos = horaa[3:]
+                    horasC = horaC[:2]
+                    minutosC = horaC[3:]
 
-                insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
-                insecC = datetime.datetime(int(anoC), int(mesC), int(diaC), int(horasC), int(minutosC))
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
-                plantedidB = cur.fetchone()
-                
-                if plantedidB[0] == 'j':
-                    colheita = insec + datetime.timedelta(hours=8)
-                    plantaB = 'Jujubas plantadas'
-                elif plantedidB[0] == 'ad':
-                    colheita = insec + datetime.timedelta(hours=12)
-                    plantaB = 'Algodão-doce plantado'
-                elif plantedidB[0] == 'm':
-                    colheita = insec + datetime.timedelta(hours=24)
-                    plantaB = 'Marshmallow plantado'
+                    insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
+                    insecC = datetime.datetime(int(anoC), int(mesC), int(diaC), int(horasC), int(minutosC))
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
+                    plantedidB = cur.fetchone()
+                    
+                    if plantedidB[0] == 'j':
+                        colheita = insec + datetime.timedelta(hours=8)
+                        plantaB = 'Jujubas plantadas'
+                    elif plantedidB[0] == 'ad':
+                        colheita = insec + datetime.timedelta(hours=12)
+                        plantaB = 'Algodão-doce plantado'
+                    elif plantedidB[0] == 'm':
+                        colheita = insec + datetime.timedelta(hours=24)
+                        plantaB = 'Marshmallow plantado'
 
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
-                plantedidC = cur.fetchone()
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
+                    plantedidC = cur.fetchone()
 
-                if plantedidC[0] == 'j':
-                    colheitaC = insec + datetime.timedelta(hours=8)
-                    plantaC = 'Jujubas plantadas'
-                elif plantedidC[0] == 'ad':
-                    colheitaC = insec + datetime.timedelta(hours=12)
-                    plantaC = 'Algodão-doce plantado'
-                elif plantedidC[0] == 'm':
-                    colheitaC = insec + datetime.timedelta(hours=24)
-                    plantaC = 'Marshmallow plantado'
+                    if plantedidC[0] == 'j':
+                        colheitaC = insec + datetime.timedelta(hours=8)
+                        plantaC = 'Jujubas plantadas'
+                    elif plantedidC[0] == 'ad':
+                        colheitaC = insec + datetime.timedelta(hours=12)
+                        plantaC = 'Algodão-doce plantado'
+                    elif plantedidC[0] == 'm':
+                        colheitaC = insec + datetime.timedelta(hours=24)
+                        plantaC = 'Marshmallow plantado'
 
-                resultB = colheita - datetime.datetime.now()
-                resultC = colheitaC - datetime.datetime.now()
-                formatarB = ':'.join(str(resultB).split(':')[:2])
-                formatarC = ':'.join(str(resultC).split(':')[:2])
+                    resultB = colheita - datetime.datetime.now()
+                    resultC = colheitaC - datetime.datetime.now()
+                    formatarB = ':'.join(str(resultB).split(':')[:2])
+                    formatarC = ':'.join(str(resultC).split(':')[:2])
 
-                if resultB < datetime.timedelta(hours=10):
-                    if resultB > datetime.timedelta(hours=0):
-                        formatarB = f'0{formatarB}'
-                    else:
-                        formatarB = f'Pronto para colher!'
+                    if resultB < datetime.timedelta(hours=10):
+                        if resultB > datetime.timedelta(hours=0):
+                            formatarB = f'0{formatarB}'
+                        else:
+                            formatarB = f'Pronto para colher!'
 
-                if resultC < datetime.timedelta(hours=10):
-                    if resultC > datetime.timedelta(hours=0):
-                        formatarC = f'0{formatarC}'
-                    else:
-                        formatarC = f'Pronto para colher!'
+                    if resultC < datetime.timedelta(hours=10):
+                        if resultC > datetime.timedelta(hours=0):
+                            formatarC = f'0{formatarC}'
+                        else:
+                            formatarC = f'Pronto para colher!'
 
-                emb = discord.Embed(
-                title = 'PROPRIEDADE DE',
-                description = f'''
+                    emb = discord.Embed(
+                    title = 'PROPRIEDADE DE',
+                    description = f'''
 {ctx.author.mention}
 
 **SEMENTES:**
@@ -1616,118 +1656,118 @@ async def myfarm(ctx):
 > Tempo que falta: `{formatarC}`
 
 
-                ''',
-                colour = 65280
-                )
+                    ''',
+                    colour = 65280
+                    )
 
-                
-                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
-                await ctx.send(embed = emb)
+                    
+                    emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
+                    await ctx.send(embed = emb)
         
         
-        elif plantedA[0] == 0 and plantedB[0] == 0 and plantedC[0] == 0:
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
-                resultado_datasA = cur.fetchmany()
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
-                resultado_datasB = cur.fetchmany()
-                cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
-                resultado_datasC = cur.fetchmany()
-                
-                dataa = resultado_datasA[0][0]
-                horaa = resultado_datasA[0][1]
-                dataB = resultado_datasB[0][0]
-                horaB = resultado_datasB[0][1]
-                dataC = resultado_datasC[0][0]
-                horaC = resultado_datasC[0][1]
-                
-                dia = dataa[:2]
-                mes = dataa[3:5]
-                ano = dataa[6:]
-                diaB = dataB[:2]
-                mesB = dataB[3:5]
-                anoB = dataB[6:]
-                diaC = dataC[:2]
-                mesC = dataC[3:5]
-                anoC = dataC[6:]
-                
-                horas = horaa[:2]
-                minutos = horaa[3:]
-                horasB = horaB[:2]
-                minutosB = horaB[3:]
-                horasC = horaC[:2]
-                minutosC = horaC[3:]
+            elif plantedA[0] == 0 and plantedB[0] == 0 and plantedC[0] == 0:
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
+                    resultado_datasA = cur.fetchmany()
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
+                    resultado_datasB = cur.fetchmany()
+                    cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
+                    resultado_datasC = cur.fetchmany()
+                    
+                    dataa = resultado_datasA[0][0]
+                    horaa = resultado_datasA[0][1]
+                    dataB = resultado_datasB[0][0]
+                    horaB = resultado_datasB[0][1]
+                    dataC = resultado_datasC[0][0]
+                    horaC = resultado_datasC[0][1]
+                    
+                    dia = dataa[:2]
+                    mes = dataa[3:5]
+                    ano = dataa[6:]
+                    diaB = dataB[:2]
+                    mesB = dataB[3:5]
+                    anoB = dataB[6:]
+                    diaC = dataC[:2]
+                    mesC = dataC[3:5]
+                    anoC = dataC[6:]
+                    
+                    horas = horaa[:2]
+                    minutos = horaa[3:]
+                    horasB = horaB[:2]
+                    minutosB = horaB[3:]
+                    horasC = horaC[:2]
+                    minutosC = horaC[3:]
 
-                insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
-                insecB = datetime.datetime(int(anoB), int(mesB), int(diaB), int(horasB), int(minutosB))
-                insecC = datetime.datetime(int(anoC), int(mesC), int(diaC), int(horasC), int(minutosC))
+                    insec = datetime.datetime(int(ano), int(mes), int(dia), int(horas), int(minutos))
+                    insecB = datetime.datetime(int(anoB), int(mesB), int(diaB), int(horasB), int(minutosB))
+                    insecC = datetime.datetime(int(anoC), int(mesC), int(diaC), int(horasC), int(minutosC))
 
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
-                plantedidA = cur.fetchone()
-                
-                if plantedidA[0] == 'j':
-                    colheita = insec + datetime.timedelta(hours=8)
-                    planta = 'Jujubas plantadas'
-                elif plantedidA[0] == 'ad':
-                    colheita = insec + datetime.timedelta(hours=12)
-                    planta = 'Algodão-doce plantado'
-                elif plantedidA[0] == 'm':
-                    colheita = insec + datetime.timedelta(hours=24)
-                    planta = 'Marshmallow plantado'
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
+                    plantedidA = cur.fetchone()
+                    
+                    if plantedidA[0] == 'j':
+                        colheita = insec + datetime.timedelta(hours=8)
+                        planta = 'Jujubas plantadas'
+                    elif plantedidA[0] == 'ad':
+                        colheita = insec + datetime.timedelta(hours=12)
+                        planta = 'Algodão-doce plantado'
+                    elif plantedidA[0] == 'm':
+                        colheita = insec + datetime.timedelta(hours=24)
+                        planta = 'Marshmallow plantado'
 
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
-                plantedidB = cur.fetchone()
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
+                    plantedidB = cur.fetchone()
 
-                if plantedidB[0] == 'j':
-                    colheitaB = insec + datetime.timedelta(hours=8)
-                    plantaB = 'Jujubas plantadas'
-                elif plantedidB[0] == 'ad':
-                    colheitaB = insec + datetime.timedelta(hours=12)
-                    plantaB = 'Algodão-doce plantado'
-                elif plantedidB[0] == 'm':
-                    colheitaB = insec + datetime.timedelta(hours=24)
-                    plantaB = 'Marshmallow plantado'
+                    if plantedidB[0] == 'j':
+                        colheitaB = insec + datetime.timedelta(hours=8)
+                        plantaB = 'Jujubas plantadas'
+                    elif plantedidB[0] == 'ad':
+                        colheitaB = insec + datetime.timedelta(hours=12)
+                        plantaB = 'Algodão-doce plantado'
+                    elif plantedidB[0] == 'm':
+                        colheitaB = insec + datetime.timedelta(hours=24)
+                        plantaB = 'Marshmallow plantado'
 
-                cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
-                plantedidC = cur.fetchone()
+                    cur.execute("SELECT plantedid FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
+                    plantedidC = cur.fetchone()
 
-                if plantedidC[0] == 'j':
-                    colheitaC = insec + datetime.timedelta(hours=8)
-                    plantaC = 'Jujubas plantadas'
-                elif plantedidC[0] == 'ad':
-                    colheitaC = insec + datetime.timedelta(hours=12)
-                    plantaC = 'Algodão-doce plantado'
-                elif plantedidC[0] == 'm':
-                    colheitaC = insec + datetime.timedelta(hours=24)
-                    plantaC = 'Marshmallow plantado'
+                    if plantedidC[0] == 'j':
+                        colheitaC = insec + datetime.timedelta(hours=8)
+                        plantaC = 'Jujubas plantadas'
+                    elif plantedidC[0] == 'ad':
+                        colheitaC = insec + datetime.timedelta(hours=12)
+                        plantaC = 'Algodão-doce plantado'
+                    elif plantedidC[0] == 'm':
+                        colheitaC = insec + datetime.timedelta(hours=24)
+                        plantaC = 'Marshmallow plantado'
 
-                resultA = colheita - datetime.datetime.now()
-                resultB = colheitaB - datetime.datetime.now()
-                resultC = colheitaC - datetime.datetime.now()
-                formatarA = ':'.join(str(resultA).split(':')[:2])
-                formatarB = ':'.join(str(resultB).split(':')[:2])
-                formatarC = ':'.join(str(resultC).split(':')[:2])
+                    resultA = colheita - datetime.datetime.now()
+                    resultB = colheitaB - datetime.datetime.now()
+                    resultC = colheitaC - datetime.datetime.now()
+                    formatarA = ':'.join(str(resultA).split(':')[:2])
+                    formatarB = ':'.join(str(resultB).split(':')[:2])
+                    formatarC = ':'.join(str(resultC).split(':')[:2])
 
-                if resultA < datetime.timedelta(hours=10):
-                    if resultA > datetime.timedelta(hours=0):
-                        formatarA = f'0{formatarA}'
-                    else:
-                        formatarA = f'Pronto para colher!'
-                
-                if resultB < datetime.timedelta(hours=10):
-                    if resultB > datetime.timedelta(hours=0):
-                        formatarB = f'0{formatarB}'
-                    else:
-                        formatarB = f'Pronto para colher!'
+                    if resultA < datetime.timedelta(hours=10):
+                        if resultA > datetime.timedelta(hours=0):
+                            formatarA = f'0{formatarA}'
+                        else:
+                            formatarA = f'Pronto para colher!'
+                    
+                    if resultB < datetime.timedelta(hours=10):
+                        if resultB > datetime.timedelta(hours=0):
+                            formatarB = f'0{formatarB}'
+                        else:
+                            formatarB = f'Pronto para colher!'
 
-                if resultC < datetime.timedelta(hours=10):
-                    if resultC > datetime.timedelta(hours=0):
-                        formatarC = f'0{formatarC}'
-                    else:
-                        formatarC = f'Pronto para colher!'
+                    if resultC < datetime.timedelta(hours=10):
+                        if resultC > datetime.timedelta(hours=0):
+                            formatarC = f'0{formatarC}'
+                        else:
+                            formatarC = f'Pronto para colher!'
 
-                emb = discord.Embed(
-                title = 'PROPRIEDADE DE',
-                description = f'''
+                    emb = discord.Embed(
+                    title = 'PROPRIEDADE DE',
+                    description = f'''
 {ctx.author.mention}
 
 **SEMENTES:**
@@ -1749,13 +1789,13 @@ async def myfarm(ctx):
 > Tempo que falta: `{formatarC}`
 
 
-                ''',
-                colour = 65280
-                )
+                    ''',
+                    colour = 65280
+                    )
 
-                
-                emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
-                await ctx.send(embed = emb)
+                    
+                    emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840368724748795934/fazenda1.png")
+                    await ctx.send(embed = emb)
             
 
 
@@ -1773,47 +1813,44 @@ async def myfarm(ctx):
 
 
 @client.command()
-async def plantar(ctx, quant, lote):
+async def plantar(ctx, quant):
     channel = ctx.channel
 
     if channel.name == 'jujuba-8h':
+        
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
         
 
-        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
         resultado = cur.fetchone()
         
         if resultado[0] == 0:
             await ctx.send(f'{ctx.author.mention}, esse lote não está disponível para plantar!')
+
         elif resultado[0] == 1:
 
             cur.execute("SELECT s_j FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
             resultado2 = cur.fetchone()
 
-            if lote.upper() == 'A':
-                maximo = 1000
-            elif lote.upper() == 'B':
-                maximo = 5000
-            elif lote.upper() == 'C':
-                maximo = 15000
+           
 
-            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= maximo:
+            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= 1000:
 
                 await ctx.send(f'**{ctx.author.mention}, está PLANTANDO...**')
                 
 
                 total = resultado[0] - 1
                 total2 = resultado2[0] - int(quant)
-                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='j' WHERE iduser=%s AND loteid=%s", (total, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='j' WHERE iduser=%s AND loteid='A'", (total, ctx.author.id, ))
                 cur.execute("UPDATE fazenda SET s_j=%s WHERE iduser=%s AND loteid='A'", (total2, ctx.author.id))
 
                 datanow = datetime.datetime.now()
-                soma = datanow + datetime.timedelta(hours=8)
+                
                 dataa = datanow.strftime("%d/%m/%Y")
                 horaa = datanow.strftime("%H:%M")
 
-                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid=%s", (int(quant), dataa, horaa, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid='A'", (int(quant), dataa, horaa, ctx.author.id))
                 conn.commit()
                 await asyncio.sleep(10)
                 emb = discord.Embed(
@@ -1823,7 +1860,7 @@ async def plantar(ctx, quant, lote):
 
 {ctx.author.mention},
     
-> Você plantou `{quant}` sementes de jujuba no seu lote `{lote.upper()}`
+> Você plantou `{quant}` sementes de jujuba no seu lote `A`
 > 
 > Use o comando `!myfarm` para mais informações.
 
@@ -1838,6 +1875,7 @@ async def plantar(ctx, quant, lote):
                 
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                emb.set_image(url="https://cdn.discordapp.com/attachments/831946320200728577/841407984353280040/terra_arada2.png")
                 await ctx.send(embed = emb)
                 
 
@@ -1847,12 +1885,9 @@ async def plantar(ctx, quant, lote):
                 await ctx.send(f'{ctx.author.mention}, você não tem sementes!')
             elif int(quant) < 50:
                 await ctx.send(f'{ctx.author.mention}, você precisa de pelo menos 50 sementes para plantar!')
-            elif int(quant) > 1000 and lote == 'A':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes nesse lote!')
-            elif int(quant) > 5000 and lote == 'B':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 5000 sementes nesse lote!')
-            elif int(quant) > 15000 and lote == 'C':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 15000 sementes nesse lote!')
+            elif int(quant) > 1000:
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes no `lote A`!')
+            
 
             else:
                 await ctx.send(f'{ctx.author.mention}, você não tem essa quantidade toda de sementes!')
@@ -1860,40 +1895,42 @@ async def plantar(ctx, quant, lote):
 
 
     elif channel.name == 'algodão-doce-12h':
+        
+
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
 
-        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
         resultado = cur.fetchone()
         
-        if resultado[0] == 0:
+
+        if resultado == None:
+                await ctx.send(f'{ctx.author.mention}, você não tem o `lote B`! Compre-o na loja.')
+            
+        elif resultado[0] == 0:
             await ctx.send(f'{ctx.author.mention}, esse lote não está disponível para plantar!')
+
         elif resultado[0] == 1:
 
             cur.execute("SELECT s_ad FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
             resultado2 = cur.fetchone()
 
-            if lote.upper() == 'A':
-                maximo = 1000
-            elif lote.upper() == 'B':
-                maximo = 5000
-            elif lote.upper() == 'C':
-                maximo = 15000
+            
 
-            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= maximo:
+            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= 1500:
 
                 await ctx.send(f'**{ctx.author.mention}, está PLANTANDO...**')
                 total = resultado[0] - 1
                 total2 = resultado2[0] - int(quant)
-                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='ad' WHERE iduser=%s AND loteid=%s", (total, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='ad' WHERE iduser=%s AND loteid='B'", (total, ctx.author.id))
                 cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (total2, ctx.author.id))
 
                 datanow = datetime.datetime.now()
-                soma = datanow + datetime.timedelta(hours=8)
+                
                 dataa = datanow.strftime("%d/%m/%Y")
                 horaa = datanow.strftime("%H:%M")
 
-                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid=%s", (int(quant), dataa, horaa, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid='B'", (int(quant), dataa, horaa, ctx.author.id))
                 conn.commit()
                 await asyncio.sleep(10)
                 emb = discord.Embed(
@@ -1903,7 +1940,7 @@ async def plantar(ctx, quant, lote):
 
 {ctx.author.mention},
     
-> Você plantou `{quant}` sementes de algodão-doce no seu lote `{lote.upper()}`
+> Você plantou `{quant}` sementes de algodão-doce no seu lote `B`
 > 
 > Use o comando `!myfarm` para mais informações.
 
@@ -1918,6 +1955,7 @@ async def plantar(ctx, quant, lote):
                 
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                emb.set_image(url="https://cdn.discordapp.com/attachments/831946320200728577/841407984353280040/terra_arada2.png")
                 await ctx.send(embed = emb)
 
                 
@@ -1926,52 +1964,51 @@ async def plantar(ctx, quant, lote):
                 await ctx.send(f'{ctx.author.mention}, você não tem sementes!')
             elif int(quant) < 50:
                 await ctx.send(f'{ctx.author.mention}, você precisa de pelo menos 50 sementes para plantar!')
-            elif int(quant) > 1000 and lote == 'A':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes nesse lote!')
-            elif int(quant) > 5000 and lote == 'B':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 5000 sementes nesse lote!')
-            elif int(quant) > 15000 and lote == 'C':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 15000 sementes nesse lote!')
+            
+            elif int(quant) > 1500:
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1500 sementes no `lote B`!')
+            
+            
 
             else:
                 await ctx.send(f'{ctx.author.mention}, você não tem essa quantidade toda de sementes!')
 
 
     elif channel.name == 'marshmallow-24h':
+        
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
 
-        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
         resultado = cur.fetchone()
         
-        if resultado[0] == 0:
+        if resultado == None:
+                await ctx.send(f'{ctx.author.mention}, você não tem o `lote C`! Compre-o na loja.')
+
+
+        elif resultado[0] == 0:
             await ctx.send(f'{ctx.author.mention}, esse lote não está disponível para plantar!')
         elif resultado[0] == 1:
 
-            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, lote.upper()))
+            cur.execute("SELECT s_m FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
             resultado2 = cur.fetchone()
 
-            if lote.upper() == 'A':
-                maximo = 1000
-            elif lote.upper() == 'B':
-                maximo = 5000
-            elif lote.upper() == 'C':
-                maximo = 15000
+            
 
-            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= maximo:
+            if resultado2[0] != 0 and resultado2[0] >= int(quant) and 50 <= int(quant) <= 2000:
 
                 await ctx.send(f'**{ctx.author.mention}, está PLANTANDO...**')
                 total = resultado[0] - 1
                 total2 = resultado2[0] - int(quant)
-                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='m' WHERE iduser=%s AND loteid=%s", (total, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=%s, plantedid='m' WHERE iduser=%s AND loteid='C'", (total, ctx.author.id))
                 cur.execute("UPDATE fazenda SET s_m=%s WHERE iduser=%s AND loteid='A'", (total2, ctx.author.id))
 
                 datanow = datetime.datetime.now()
-                soma = datanow + datetime.timedelta(hours=8)
+                
                 dataa = datanow.strftime("%d/%m/%Y")
                 horaa = datanow.strftime("%H:%M")
 
-                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid=%s", (int(quant), dataa, horaa, ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET planted=%s, dataa=%s, horaa=%s WHERE iduser=%s AND loteid='C'", (int(quant), dataa, horaa, ctx.author.id))
                 conn.commit()
                 await asyncio.sleep(10)
                 emb = discord.Embed(
@@ -1981,7 +2018,7 @@ async def plantar(ctx, quant, lote):
 
 {ctx.author.mention},
     
-> Você plantou `{quant}` sementes de marshmallow no seu lote `{lote.upper()}`
+> Você plantou `{quant}` sementes de marshmallow no seu lote `C`
 > 
 > Use o comando `!myfarm` para mais informações.
 
@@ -1996,6 +2033,7 @@ async def plantar(ctx, quant, lote):
                 
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                emb.set_image(url="https://cdn.discordapp.com/attachments/831946320200728577/841407984353280040/terra_arada2.png")
                 await ctx.send(embed = emb)
 
                 
@@ -2004,12 +2042,10 @@ async def plantar(ctx, quant, lote):
                 await ctx.send(f'{ctx.author.mention}, você não tem sementes!')
             elif int(quant) < 50:
                 await ctx.send(f'{ctx.author.mention}, você precisa de pelo menos 50 sementes para plantar!')
-            elif int(quant) > 1000 and lote == 'A':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 1000 sementes nesse lote!')
-            elif int(quant) > 5000 and lote == 'B':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 5000 sementes nesse lote!')
-            elif int(quant) > 15000 and lote == 'C':
-                await ctx.send(f'{ctx.author.mention}, você pode plantar até 15000 sementes nesse lote!')
+            
+            
+            elif int(quant) > 2000:
+                await ctx.send(f'{ctx.author.mention}, você pode plantar até 2000 sementes no `lote C`!')
 
             else:
                 await ctx.send(f'{ctx.author.mention}, você não tem essa quantidade toda de sementes!')
@@ -2020,29 +2056,33 @@ async def plantar(ctx, quant, lote):
     cur.close()
     conn.close()
 
+
+
+
+
+
+
+
 @client.command()
-async def colher(ctx, lote):
+async def colher(ctx):
     channel = ctx.channel
     if channel.name == 'jujuba-8h':
+        
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
 
-        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
         resultado_lotes = cur.fetchone()
 
-        cur.execute("SELECT plantedid FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
-        resultado_plantedid = cur.fetchone()
-
-
+        
 
         if resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
         
-        elif resultado_plantedid[0] != 'j':
-            await ctx.send(f'{ctx.author.mention}, você não plantou **jujubas** nesse lote! \nUse `!myfarm` para saber o que plantou')
+ 
         
-        elif resultado_lotes[0] == 0 and resultado_plantedid[0] == 'j':
-            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        if resultado_lotes[0] == 0: 
+            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
             resultado_datas = cur.fetchmany()
             dataa = resultado_datas[0][0]
             horaa = resultado_datas[0][1]
@@ -2060,11 +2100,11 @@ async def colher(ctx, lote):
             vencida = colheita + datetime.timedelta(hours=72)
             if datenow >= colheita and datenow < vencida:
                 await ctx.send(f'**{ctx.author.mention}, está COLHENDO...**')
-                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
-                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
+                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
                 planted = cur.fetchone()
 
-                colheita_valor = ceil(planted[0] / random.randint(20, 40)) + (planted[0] * 0.1)
+                colheita_valor = ceil(planted[0] / random.randint(10, 20)) + (planted[0] * 0.1)
                 lucro = colheita_valor - (planted[0] * 0.1)
                 
                 cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
@@ -2073,7 +2113,7 @@ async def colher(ctx, lote):
                 total = colheita_valor + cookie_antg[0]
                 
                 cur.execute("UPDATE bank SET cookies=%s WHERE iduser = %s", (total, ctx.author.id))
-                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid='A'", (ctx.author.id,))
 
                 conn.commit()
                 await asyncio.sleep(10)
@@ -2084,11 +2124,11 @@ async def colher(ctx, lote):
 
 {ctx.author.mention},
     
-> Você colheu suas jujubas no lote `{lote.upper()}`
-> 
 > Parabéns! Ganhaste `{colheita_valor:.0f} cookies`!!
 > 
 > Seu lucro: `{lucro:.0f} cookies`
+> 
+> Você havia plantado `{planted[0]}` sementes de jujubas
 
 
 Use o comando `!myfarm` para mais informações.
@@ -2102,6 +2142,7 @@ Use o comando `!myfarm` para mais informações.
                 
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                emb.set_image(url="https://cdn.discordapp.com/attachments/831946320200728577/841407979856855120/jujubas2.png")
                 await ctx.send(embed = emb)
                 
             elif datenow < colheita:
@@ -2116,14 +2157,16 @@ Use o comando `!myfarm` para mais informações.
                 emb = discord.Embed(
                 title = ':skull_crossbones: AS JUJUBAS ESTÃO TODAS MORTAS :skull_crossbones:',
                 description = f'''
+
 {ctx.author.mention},
     
-> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `{lote.upper()}`
+> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `A`
 > 
 > Não ganhaste cookies nessa colheita :(
 
 
 **Lembre-se: `jujubas têm até 3 dias para serem colhidas`**
+
 
                     ''',
                 colour = 65280
@@ -2141,22 +2184,19 @@ Use o comando `!myfarm` para mais informações.
 
 
     elif channel.name == 'algodão-doce-12h':
+        
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
 
-        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
         resultado_lotes = cur.fetchone()
-        cur.execute("SELECT plantedid FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
-        resultado_plantedid = cur.fetchone()
 
         if resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
         
-        elif resultado_plantedid[0] != 'ad':
-            await ctx.send(f'{ctx.author.mention}, você não plantou **algodões-doces** nesse lote! \nUse `!myfarm` para saber o que plantou')
         
-        elif resultado_lotes[0] == 0 and resultado_plantedid[0] == 'ad':
-            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        if resultado_lotes[0] == 0: 
+            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
             resultado_datas = cur.fetchmany()
             dataa = resultado_datas[0][0]
             horaa = resultado_datas[0][1]
@@ -2174,11 +2214,11 @@ Use o comando `!myfarm` para mais informações.
             vencida = colheita + datetime.timedelta(hours=48)
             if datenow >= colheita and datenow < vencida:
                 await ctx.send(f'**{ctx.author.mention}, está COLHENDO...**')
-                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
-                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
+                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
                 planted = cur.fetchone()
 
-                colheita_valor = ceil(planted[0] / random.randint(8, 15)) + (planted[0] * 0.2)
+                colheita_valor = ceil(planted[0] / random.randint(6, 15)) + (planted[0] * 0.2)
                 lucro = colheita_valor - (planted[0] * 0.2)
                 
                 cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
@@ -2187,7 +2227,7 @@ Use o comando `!myfarm` para mais informações.
                 total = colheita_valor + cookie_antg[0]
                 
                 cur.execute("UPDATE bank SET cookies=%s WHERE iduser = %s", (total, ctx.author.id))
-                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid='B'", (ctx.author.id, ))
 
                 conn.commit()
                 await asyncio.sleep(10)
@@ -2198,11 +2238,11 @@ Use o comando `!myfarm` para mais informações.
 
 {ctx.author.mention},
     
-> Você colheu seus algodões-doces no lote `{lote.upper()}`
-> 
 > Parabéns! Ganhaste `{colheita_valor:.0f} cookies`!!
 > 
 > Seu lucro: `{lucro:.0f} cookies`
+> 
+> Você havia plantado `{planted[0]}` sementes de algodão-doce
 
 
 Use o comando `!myfarm` para mais informações.
@@ -2215,6 +2255,7 @@ Use o comando `!myfarm` para mais informações.
                 
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                emb.set_image(url="https://cdn.discordapp.com/attachments/831946320200728577/841407969652637726/algodao-doce2.png")
                 await ctx.send(embed = emb)
                 
             elif datenow < colheita:
@@ -2229,14 +2270,16 @@ Use o comando `!myfarm` para mais informações.
                 emb = discord.Embed(
                 title = ':skull_crossbones: OS ALGODÕES-DOCES ESTÃO TODOS MORTOS :skull_crossbones:',
                 description = f'''
+
 {ctx.author.mention},
     
-> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `{lote.upper()}`
+> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `B`
 > 
 > Não ganhaste cookies nessa colheita :(
 
 
 **Lembre-se: `algodões-doces têm até 2 dias para serem colhidos`**
+
 
                     ''',
                 colour = 65280
@@ -2253,23 +2296,21 @@ Use o comando `!myfarm` para mais informações.
 
 
     elif channel.name == 'marshmallow-24h':
+      
         conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
         cur = conn.cursor()
 
-        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
         resultado_lotes = cur.fetchone()
 
-        cur.execute("SELECT plantedid FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
-        resultado_plantedid = cur.fetchone()
+
 
         if resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
         
-        elif resultado_plantedid[0] != 'm':
-            await ctx.send(f'{ctx.author.mention}, você não plantou **marshmallows** nesse lote! \nUse `!myfarm` para saber o que plantou')
         
-        elif resultado_lotes[0] == 0 and resultado_plantedid[0] == 'm':
-            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
+        if resultado_lotes[0] == 0: 
+            cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
             resultado_datas = cur.fetchmany()
             dataa = resultado_datas[0][0]
             horaa = resultado_datas[0][1]
@@ -2287,11 +2328,11 @@ Use o comando `!myfarm` para mais informações.
             vencida = colheita + datetime.timedelta(hours=24)
             if datenow >= colheita and datenow < vencida:
                 await ctx.send(f'**{ctx.author.mention}, está COLHENDO...**')
-                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid=%s", (ctx.author.id, lote.upper()))
-                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
+                cur.execute("SELECT planted FROM fazenda WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
                 planted = cur.fetchone()
 
-                colheita_valor = ceil(planted[0] / random.randint(2, 5)) + (planted[0] * 2)
+                colheita_valor = ceil(planted[0] / random.randint(3, 10)) + (planted[0] * 2)
                 lucro = colheita_valor - (planted[0] * 2)
                 
                 cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
@@ -2300,7 +2341,7 @@ Use o comando `!myfarm` para mais informações.
                 total = colheita_valor + cookie_antg[0]
                 
                 cur.execute("UPDATE bank SET cookies=%s WHERE iduser = %s", (total, ctx.author.id))
-                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid=%s", (ctx.author.id, lote.upper()))
+                cur.execute("UPDATE fazenda SET planted=0 WHERE iduser=%s AND loteid='C'", (ctx.author.id, ))
 
                 conn.commit()
                 await asyncio.sleep(10)
@@ -2311,11 +2352,11 @@ Use o comando `!myfarm` para mais informações.
 
 {ctx.author.mention},
     
-> Você colheu seus marshmallows no lote `{lote.upper()}`
-> 
 > Parabéns! Ganhaste `{colheita_valor:.0f} cookies`!!
 > 
 > Seu lucro: `{lucro:.0f} cookies`
+> 
+> Você havia plantado `{planted[0]}` sementes de marshmallow
 
 
 Use o comando `!myfarm` para mais informações.
@@ -2328,6 +2369,7 @@ Use o comando `!myfarm` para mais informações.
                 
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
+                emb.set_image(url="https://cdn.discordapp.com/attachments/831946320200728577/841407983074541610/marshmallow2.png")
                 await ctx.send(embed = emb)
                 
             elif datenow < colheita:
@@ -2342,14 +2384,16 @@ Use o comando `!myfarm` para mais informações.
                 emb = discord.Embed(
                 title = ':skull_crossbones: OS MARSHMALLOWS ESTÃO TODOS MORTOS :skull_crossbones:',
                 description = f'''
+
 {ctx.author.mention},
     
-> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `{lote.upper()}`
+> Você demorou muito para colher e perdeu tudo o que tinha plantado no seu lote `C`
 > 
 > Não ganhaste cookies nessa colheita :(
 
 
-**Lembre-se: `marshmallows têm até 3 dias para serem colhidos`**
+**Lembre-se: `marshmallows têm até 1 dia para serem colhidos`**
+
 
                     ''',
                 colour = 65280
@@ -2371,7 +2415,9 @@ Use o comando `!myfarm` para mais informações.
 async def loja(ctx):
     emb = discord.Embed(
         title = 'LOJA DOÇURAS:',
-        description = """Vendemos sementes e lotes de terra!
+        description = """
+
+Vendemos sementes e lotes de terra!
 
 **SEMENTES:**
 
@@ -2402,6 +2448,9 @@ async def loja(ctx):
 > 
 > Pacote com 1000 sementes  
 > 200 cookies ...... `!buy 1000ad`
+> 
+> Pacote com 1500 sementes  
+> 300 cookies ...... `!buy 1500ad`
 
 
 
@@ -2418,6 +2467,9 @@ async def loja(ctx):
 > 
 > Pacote com 1000 sementes  
 > 2000 cookies ...... `!buy 1000m`
+> 
+> Pacote com 2000 sementes  
+> 4000 cookies ...... `!buy 2000m`
 
 
 
@@ -2429,16 +2481,14 @@ async def loja(ctx):
 > `Adquirido.`
 
 **Lote B:**
-> Lote com limite máximo de 5000  
-> 25000 cookies ...... `!buy loteb`
+> Lote com limite máximo de 1500  
+> 5890 cookies ...... `!buy loteb`
 
 **Lote C:**
-> Lote com limite máximo de 15000 
-> 100000 cookies ...... `!buy lotec`
-        
+> Lote com limite máximo de 2000 
+> 47390 cookies ...... `!buy lotec`
         
 
-        
         """,
         colour = 65280
     )
@@ -2452,7 +2502,77 @@ async def loja(ctx):
     await ctx.send(embed=emb)
 
 
+@client.command()
+async def lucrof(ctx):
+    channel = ctx.channel
+    if channel.name == '🤖┃servos' or channel.name == '🌱┃fazenda':
+        emb = discord.Embed(
+        title = 'LUCROS DE CADA SEMENTE:',
+        description = """
 
+Veja aqui os lucros das sementes!
+
+
+**Sementes de jujuba:**
+> Pacote de 50 sementes  
+> Lucro: `3 a 5 cookies`
+> 
+> Pacote de 100 sementes  
+> Lucro: `5 a 10 cookies`
+> 
+> Pacote de 500 sementes 
+> Lucro: `25 a 50 cookies`
+> 
+> Pacote de 1000 sementes  
+> Lucro: `50 a 100 cookies`
+        
+
+
+**Sementes de algodão-doce:**
+> Pacote de 50 sementes  
+> Lucro: `4 a 9 cookies`
+> 
+> Pacote de 100 sementes  
+> Lucro: `7 a 17 cookies`
+> 
+> Pacote de 500 sementes 
+> Lucro: `34 a 84 cookies`
+> 
+> Pacote de 1000 sementes  
+> Lucro: `67 a 167 cookies`
+> 
+> Pacote de 1500 sementes  
+> Lucro: `100 a 250 cookies`
+
+
+
+**Sementes de marshmallow:**
+> Pacote de 50 sementes  
+> Lucro: `5 a 17 cookies`
+> 
+> Pacote de 100 sementes  
+> Lucro: `10 a 34 cookies`
+> 
+> Pacote de 500 sementes 
+> Lucro: `50 a 167 cookies`
+> 
+> Pacote de 1000 sementes  
+> Lucro: `100 a 334 cookies`
+> 
+> Pacote de 2000 sementes  
+> Lucro: `200 a 667 cookies`
+
+
+        """,
+        colour = 65280
+    )
+
+    
+
+    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/841432227413229599/stonks.jpg')
+
+    
+    await ctx.send(embed=emb)
 
 
 
@@ -2472,6 +2592,611 @@ async def msg(ctx, message):
     await ctx.send(message)
 
 
+# VV ====================== ARTES ====================== VV
+
+
+@client.command()
+async def artes(ctx):
+    channel = ctx.channel
+    if channel.name == '🤖┃servos':
+        guild = ctx.guild
+        artesRole = discord.utils.get(guild.roles, name='Artes')
+        
+        cargo_adicionado = False
+        for role in ctx.author.roles: 
+            if role == artesRole: 
+                await ctx.author.remove_roles(artesRole)
+                await ctx.send(f'{ctx.author.mention}, agora você não tem mais acesso à categoria ARTES!') 
+                cargo_adicionado = True 
+                break 
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        cur.execute("SELECT iduser FROM bank WHERE iduser=%s", (ctx.author.id, ))
+        resultado = cur.fetchone()
+        
+        if cargo_adicionado == False and resultado != None:
+            
+            await ctx.author.add_roles(artesRole) 
+            await ctx.send(f"{ctx.author.mention}, agora você tem acesso à categoria ARTES!")
+
+        elif resultado == None:
+            await ctx.send(f'{ctx.author.mention}, você precisa ter uma conta no banco para poder entrar! \nUse `!criarconta` para criar uma.')
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+
+    cur.close()
+    conn.close()
+
+@client.command()
+async def recep(ctx):
+    channel = ctx.channel
+    guild = ctx.guild
+    nRole = discord.utils.get(guild.roles, name='Artista Novato')
+    aRole = discord.utils.get(guild.roles, name='Artista Amador')
+    eRole = discord.utils.get(guild.roles, name='Artista Experiente')
+    canalobras = client.get_channel(841800199127302221)
+    canalgaleria = client.get_channel(831196291819634709)
+    if channel.name == '🎫┃recepção' and ctx.author.id == 611235322411352107:
+        emb = discord.Embed(
+        title = 'RECEPÇÃO:',
+        description = f'''
+
+Para colocar sua arte no canal {canalgaleria.mention} você precisa 
+comprar um **Ticket Galeria**
+Não é possível comprar dois tickets iguais!
+
+
+**TICKETS**
+
+> Ticket Galeria (apenas 1 uso)
+> Preço ......... `10 cookies`
+> Comando: `!tg`
+
+> Ticket Obras à Venda (apenas 1 uso)
+> Preço ......... `1 cookie`
+> Comando: `!toav`
+
+
+> Ticket Ideias Desenhos (apenas 1 uso)
+> Preço ......... `5 cookies`
+> Comando: `!tid`
+
+
+
+**VENDAS**
+
+Para colocar uma obra à venda você precisa copiar o id
+da sua obra em {canalgaleria.mention}. 
+
+Depois volte aqui e coloque
+o seguinte comando **`!vender [id da obra] [preço]`**
+
+Sua obra de arte será exposta à venda no canal {canalobras.mention}
+
+Só é possível ter **`3 obras`** à venda ao mesmo tempo. Se colocar
+uma quarta obra, a primeira será retirada e ninguém poderá 
+comprá-la.
+
+
+**OBS: se não souber copiar o id de uma mensagem, chame um 
+membro da realeza para lhe ajudar.**
+
+
+
+> {nRole.mention} é dado ao vender `1 obra`
+> Valores de venda permitidos: `10 a 30 cookies`
+> 
+> {aRole.mention} é dado ao vender `100 obras`
+> Valores de venda permitidos: `30 a 300 cookies`
+> 
+> {eRole.mention} é dado ao vender `500 obras`
+> Valores de venda permitidos: `acima de 300 cookies`
+
+
+        ''',
+        colour = 16715320
+    )
+        await ctx.send(embed = emb)
+
+@client.command()
+async def tg(ctx):
+    channel = ctx.channel
+    if channel.name == '🎫┃recepção':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        
+        
+        cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+        da = cur.fetchone()
+    
+        if da[0] >= 10:
+            guild = ctx.guild
+            tgRole = discord.utils.get(guild.roles, name='Ticket Galeria')
+        
+            cargo_adicionado = False
+            for role in ctx.author.roles:
+                if role == tgRole: 
+                    
+                    await ctx.send(f'{ctx.author.mention}, você já tem um Ticket Galeria!')
+                    cargo_adicionado = True
+                    break 
+
+            
+            if cargo_adicionado == True:
+                pass 
+
+            elif cargo_adicionado == False:
+                
+                totald = da[0] - 10     
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1 Ticket Galeria` e já pode colocar uma obra sua na Galeria!
+                    ''')
+                conn.commit()
+                guild = ctx.guild
+                gRole = discord.utils.get(guild.roles, name='Ticket Galeria')
+                await ctx.author.add_roles(gRole)
+
+        else:
+            await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+        cur.close()
+        conn.close()
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+@client.command()
+async def toav(ctx):
+    channel = ctx.channel
+    if channel.name == '🎫┃recepção':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        
+        
+        cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+        da = cur.fetchone()
+    
+        if da[0] >= 1:
+            
+            guild = ctx.guild
+            toavRole = discord.utils.get(guild.roles, name='Ticket Obras à Venda')
+        
+            cargo_adicionado = False
+            for role in ctx.author.roles:
+                if role == toavRole: 
+                    
+                    await ctx.send(f'{ctx.author.mention}, você já tem um Ticket Obras à Venda!')
+                    cargo_adicionado = True
+                    break 
+
+            
+            if cargo_adicionado == True:
+                pass 
+
+            elif cargo_adicionado == False:
+
+                cur.execute("UPDATE bank SET cookies=cookies - 1 WHERE iduser=%s", (ctx.author.id, ))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1 Ticket Obras à Venda` e já pode comprar uma obra!
+                    ''')
+                conn.commit()
+                guild = ctx.guild
+                gRole = discord.utils.get(guild.roles, name='Ticket Obras à Venda')
+                await ctx.author.add_roles(gRole)
+
+        else:
+            await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+        
+        cur.close()
+        conn.close()
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+@client.command()
+async def tid(ctx):
+    channel = ctx.channel
+    if channel.name == '🎫┃recepção':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        
+        
+        cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+        da = cur.fetchone()
+    
+        if da[0] >= 5:
+
+            guild = ctx.guild
+            tidRole = discord.utils.get(guild.roles, name='Ticket Ideias Desenhos')
+        
+            cargo_adicionado = False
+            for role in ctx.author.roles:
+                if role == tidRole: 
+                    
+                    await ctx.send(f'{ctx.author.mention}, você já tem um Ticket Ideias Desenhos!')
+                    cargo_adicionado = True
+                    break 
+
+            
+            if cargo_adicionado == True:
+                pass 
+
+            elif cargo_adicionado == False:
+                
+                totald = da[0] - 5     
+                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
+                await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
+Você comprou `1 Ticket Ideias Desenhos` e já pode pedir uma dica!
+                    ''')
+                conn.commit()
+                guild = ctx.guild
+                idRole = discord.utils.get(guild.roles, name='Ticket Ideias Desenhos')
+                await ctx.author.add_roles(idRole)
+
+        else:
+            await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para realizar essa compra!')
+
+        cur.close()
+        conn.close()
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+
+@client.command()
+async def vender(ctx, idart, preço):
+    channel = ctx.channel
+    if channel.name == '🎫┃recepção':
+
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        cur.execute("SELECT idart FROM vendas WHERE iduser = %s AND idart=%s", (ctx.author.id, int(idart)))
+        resultado = cur.fetchone()
+        
+        
+        
+        
+        if resultado == None:
+            
+            channel = client.get_channel(831196291819634709)
+            art = await channel.fetch_message(idart)
+            
+            img = art.attachments   #use img[0]
+            
+            if img:
+                
+                autor = art.author.id
+                autor2 = ctx.author.id
+                channelvendas = client.get_channel(841800199127302221)
+                
+                guild = ctx.guild
+                
+                amRole = discord.utils.get(guild.roles, name='Artista Amador')
+                eRole = discord.utils.get(guild.roles, name='Artista Experiente')
+                aRole = discord.utils.get(guild.roles, name='Artes')
+                
+            
+                am = False
+                e = False
+                a = False
+                for roles in ctx.author.roles:
+                    if roles == aRole:
+                        a = True
+                        break
+                    elif roles == amRole:
+                        am = True
+                        break
+                    elif roles == eRole:
+                        e = True
+                        break
+                if autor == autor2 and 10 <= int(preço) <= 30 and a == True:
+                    
+
+                    cur.execute("SELECT iduser FROM artistas WHERE iduser=%s", (ctx.author.id, ))
+                    resultado = cur.fetchone()
+                    if resultado == None:
+                        cur.execute("INSERT INTO artistas (nome, iduser, totalvendas, lucro) VALUES (%s, %s, 0, 0)", (ctx.author.name, ctx.author.id))
+
+                    cur.execute("SELECT idart FROM vendas WHERE iduser=%s", (ctx.author.id, ))
+                    resultado2 = cur.fetchone()
+                    if resultado2 == None:
+                        cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 1)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                    else:
+                        cur.execute("SELECT idnum FROM vendas WHERE iduser=%s", (ctx.author.id, ))
+                        resultado3 = cur.fetchall()
+                        if len(resultado3) == 1:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 2)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        elif len(resultado3) == 2:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 3)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        elif len(resultado3) == 3:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 4)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                            cur.execute("DELETE FROM vendas WHERE iduser=%s AND idnum=1", (ctx.author.id, ))
+                            
+                            cur.execute("UPDATE vendas SET idnum = 1 WHERE iduser=%s AND idnum=2", (ctx.author.id, ))
+                            cur.execute("UPDATE vendas SET idnum = 2 WHERE iduser=%s AND idnum=3", (ctx.author.id, ))
+                            cur.execute("UPDATE vendas SET idnum = 3 WHERE iduser=%s AND idnum=4", (ctx.author.id, ))
+
+
+
+
+                    await ctx.send(f'{ctx.author.mention}, parabéns! Sua obra foi colocada à venda \nno canal {channelvendas.mention}')
+                    conn.commit()
+
+                    emb = discord.Embed(
+                        title='OBRA À VENDA',
+                        description=f'''
+
+**{ctx.author.mention} está vendendo essa obra de arte!**
+
+PREÇO: `{int(preço)} cookies`
+
+Para comprar use `!comprar {idart}`
+
+
+                        ''', colour= 15647503
+                    )
+                    emb.set_thumbnail(url=ctx.author.avatar_url)
+                    emb.set_image(url=img[0])
+                    await channelvendas.send(embed = emb)
+                    cur.close()
+                    conn.close()
+                    
+                    
+
+                elif autor == autor2 and 30 <= int(preço) <= 300 and am == True:
+                    conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+                    cur = conn.cursor()
+
+                    cur.execute("SELECT iduser FROM artistas WHERE iduser=%s", (ctx.author.id, ))
+                    resultado = cur.fetchone()
+                    if resultado == None:
+                        cur.execute("INSERT INTO artistas (nome, iduser, totalvendas, lucro) VALUES (%s, %s, 0, 0)", (ctx.author.name, ctx.author.id))
+                    
+                    else:
+                        cur.execute("SELECT idnum FROM vendas WHERE iduser=%s", (ctx.author.id, ))
+                        resultado3 = cur.fetchone()
+                        if len(resultado3) == 1:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 2)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        elif len(resultado3) == 2:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 3)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        elif len(resultado3) == 3:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 4)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                            cur.execute("DELETE FROM vendas WHERE iduser=%s AND idnum=1", (ctx.author.id, ))
+                            
+                            cur.execute("UPDATE vendas SET idnum = 1 WHERE iduser=%s AND idnum=2", (ctx.author.id, ))
+                            cur.execute("UPDATE vendas SET idnum = 2 WHERE iduser=%s AND idnum=3", (ctx.author.id, ))
+                            cur.execute("UPDATE vendas SET idnum = 3 WHERE iduser=%s AND idnum=4", (ctx.author.id, ))
+
+                    await ctx.send(f'{ctx.author.mention}, parabéns! Sua obra foi colocada à venda \nno canal {channelvendas.mention}')
+                    conn.commit()
+
+                    emb = discord.Embed(
+                        title='OBRA À VENDA',
+                        description=f'''
+
+**{ctx.author.mention} está vendendo essa obra de arte!**
+
+PREÇO: `{int(preço)} cookies`
+
+Para comprar use `!comprar {idart}`
+
+
+                        ''', colour= 15647503
+                    )
+                    emb.set_thumbnail(url=ctx.author.avatar_url)
+                    emb.set_image(url=img[0])
+                    await channelvendas.send(embed = emb)
+                    cur.close()
+                    conn.close()
+                    
+                
+                elif autor == autor2 and 300 <= int(preço) and e == True:
+                    conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+                    cur = conn.cursor()
+
+                    cur.execute("SELECT iduser FROM artistas WHERE iduser=%s", (ctx.author.id, ))
+                    resultado = cur.fetchone()
+                    if resultado == None:
+                        cur.execute("INSERT INTO artistas (nome, iduser, totalvendas, lucro) VALUES (%s, %s, 0, 0)", (ctx.author.name, ctx.author.id))
+                    
+                    else:
+                        cur.execute("SELECT idnum FROM vendas WHERE iduser=%s", (ctx.author.id, ))
+                        resultado3 = cur.fetchone()
+                        if len(resultado3) == 1:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 2)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        elif len(resultado3) == 2:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 3)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        elif len(resultado3) == 3:
+                            cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 4)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                            cur.execute("DELETE FROM vendas WHERE iduser=%s AND idnum=1", (ctx.author.id, ))
+                            
+                            cur.execute("UPDATE vendas SET idnum = 1 WHERE iduser=%s AND idnum=2", (ctx.author.id, ))
+                            cur.execute("UPDATE vendas SET idnum = 2 WHERE iduser=%s AND idnum=3", (ctx.author.id, ))
+                            cur.execute("UPDATE vendas SET idnum = 3 WHERE iduser=%s AND idnum=4", (ctx.author.id, ))
+
+                    await ctx.send(f'{ctx.author.mention}, parabéns! Sua obra foi colocada à venda \nno canal {channelvendas.mention}')
+                    conn.commit()
+
+                    emb = discord.Embed(
+                        title='OBRA À VENDA',
+                        description=f'''
+
+**{ctx.author.mention} está vendendo essa obra de arte!**
+
+PREÇO: `{int(preço)} cookies`
+
+Para comprar use `!comprar {idart}`
+
+
+                        ''', colour= 15647503
+                    )
+                    emb.set_thumbnail(url=ctx.author.avatar_url)
+                    emb.set_image(url=img[0])
+                    await channelvendas.send(embed = emb)
+                    cur.close()
+                    conn.close()
+
+
+                    
+                elif autor != autor2:
+                    await ctx.send(f'{ctx.author.mention}, ocorreu algum erro com este id da mensagem! \nCertifique-se que esse id é de sua mensagem. \nSe o erro persistir chame o Imperador.')
+
+                elif autor == autor2 and int(preço) > 30 or int(preço) < 10 and a == True:
+                    await ctx.send(f'{ctx.author.mention}, você não pode vender sua obra por esse valor! Leia o tutorial na recepção.')
+                elif autor == autor2 and int(preço) > 300 or int(preço) < 30 and am == True:
+                    await ctx.send(f'{ctx.author.mention}, você não pode vender sua obra por esse valor! Leia o tutorial na recepção.')
+                elif autor == autor2 and int(preço) < 300 and e == True:
+                    await ctx.send(f'{ctx.author.mention}, você não pode vender sua obra por esse valor! **Valorize sua arte**.')
+            else:
+                await ctx.send(f'{ctx.author.mention}, certifique-se que o id da mensagem que copiou tenha uma imagem.')
+        
+        elif resultado[0] == int(idart):
+            await ctx.send(f'{ctx.author.mention}, essa obra já está à venda!!')
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+@client.command()
+async def comprar(ctx, idart):
+    channel = ctx.channel
+    
+    if channel.name == '💲┃obras-à-venda':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+      
+        cur.execute("SELECT iduser FROM vendas WHERE idart=%s", (int(idart), ))
+        iduser = cur.fetchone()
+
+        
+    
+        cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
+        da = cur.fetchone()
+        cur.execute("SELECT preço FROM vendas WHERE idart=%s", (int(idart), ))
+        preço = cur.fetchone()
+        
+
+        cur.execute("SELECT idart FROM vendas WHERE idart=%s", (int(idart), ))
+        resultado = cur.fetchone()
+        
+        if resultado == None:
+            await ctx.send(f'{ctx.author.mention}, obra de arte não encontrada! Certifique-se que digitou o ID certo. \nSe o ID estiver certo então o artista não está mais vendendo essa obra.')
+
+        elif resultado != None and da[0] >= preço[0]:
+
+            channel = client.get_channel(831196291819634709)
+            art = await channel.fetch_message(idart)
+            
+            img = art.attachments
+
+            autor = art.author.id
+            autor2 = ctx.author.id
+            if autor == autor2:
+                await ctx.send(f'{ctx.author.mention}, você não pode comprar sua própria obra, bobinho(a)')
+
+            else:
+                imposto = floor(preço[0] * 35/100)
+
+                valor = floor(preço[0] * 30/100)
+                
+                cur.execute("UPDATE bank SET cookies=cookies - %s WHERE iduser=%s", (preço[0], ctx.author.id))
+                
+                cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (imposto, 611235322411352107))
+                cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (imposto, 580804486629687306))
+                
+                cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (valor, iduser[0]))
+                cur.execute("UPDATE vendas SET vendas=vendas + 1 WHERE idart=%s", (int(idart), ))
+                cur.execute("UPDATE artistas SET totalvendas=totalvendas + 1 WHERE iduser=%s", (iduser[0], ))
+                cur.execute("UPDATE artistas SET lucro=lucro + %s WHERE iduser=%s", (valor, iduser[0]))
+
+                cur.execute("SELECT iduser FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+                nobreza = cur.fetchone()
+                if nobreza == None:
+                    cur.execute("INSERT INTO nobreza (nome, iduser, obras, gasto, nobre) VALUES (%s, %s, 1, %s, 0)", (ctx.author.name, ctx.author.id, preço[0]))
+                else:
+                    cur.execute("UPDATE nobreza SET obras=obras + 1, gasto=gasto+%s WHERE iduser=%s", (preço[0], ctx.author.id))
+
+
+
+                channel = client.get_channel(831196291819634709)
+                art = await channel.fetch_message(idart)
+                
+                img = art.attachments
+                artista = client.get_user(iduser[0])
+                await ctx.send(f'{ctx.author.mention}, compra realizada com sucesso!! \nContinue apoiando seus artistas favoritos <:Finn:837761976020631583>')
+                conn.commit()
+                await asyncio.sleep(20)
+
+                cur.execute("SELECT vendas FROM vendas WHERE idart= %s", (int(idart), ))
+                hall = cur.fetchone()
+
+                if hall[0] == 10:
+                    canalhall = client.get_channel(831944832925696000)
+                    emb = discord.Embed(
+                            title='⭐ OBRA PRIMA ⭐',
+                            description=f'''
+
+**PARABÉNS, {ctx.author.mention}!!**
+
+Você vendeu `10 cópias` dessa obra. 
+
+                            ''', colour= 16715320
+                        )
+                    emb.set_thumbnail(url=artista.avatar_url)
+                    emb.set_image(url=img[0])
+                    await canalhall.send(embed = emb)
+
+
+
+
+            
+                edu = client.get_user(611235322411352107)
+                await edu.send(f'Boa chefe! Imposto pago pela compra de uma obra! \n\n`Artista:` {artista.mention} \n`Comprador:` {ctx.author.mention} \n`Imposto:` {imposto} cookies')
+                await asyncio.sleep(20)
+                carol = client.get_user(580804486629687306)
+                await carol.send(f'Vossa majestade, tivemos um imposto pago pela compra de uma obra! \n\n`Artista:` {artista.mention} \n`Comprador:` {ctx.author.mention} \n`Imposto:` {imposto} cookies')
+                await asyncio.sleep(20)
+
+                emb = discord.Embed(
+                            title='OBRA VENDIDA',
+                            description=f'''
+
+**{ctx.author.mention} comprou sua obra!**
+
+VALOR GANHO: `{valor} cookies`
+
+
+                            ''', colour= 15647503
+                        )
+                emb.set_thumbnail(url=ctx.author.avatar_url)
+                emb.set_image(url=img[0])
+                await artista.send(embed = emb)
+
+
+
+                cur.execute("SELECT totalvendas FROM artistas WHERE iduser=%s", (iduser[0], ))
+                carg = cur.fetchone()
+                
+
+                guild = ctx.guild
+                
+                memberart = guild.get_member(iduser[0])
+            
+                amRole = discord.utils.get(guild.roles, name='Artista Amador')
+                eRole = discord.utils.get(guild.roles, name='Artista Experiente')
+                nRole = discord.utils.get(guild.roles, name='Artista Novato')
+                
+                if carg[0] == 1:
+                    
+                    await memberart.add_roles(nRole)
+                elif carg[0] == 100:
+                    await memberart.remove_roles(nRole)
+                    await memberart.add_roles(amRole)
+                elif carg[0] == 500:
+                    await memberart.remove_roles(amRole)
+                    await memberart.add_roles(eRole)
 
 
 
@@ -2479,31 +3204,370 @@ async def msg(ctx, message):
 
 
 
+                conn.commit()
+
+        elif da[0] < preço[0]:
+            await ctx.send(f'{ctx.author.send}, você não tem cookies suficientes para comprar essa obra!')
 
 
 
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+    cur.close()
+    conn.close()
+
+
+# VV ====================== RANKS ====================== VV
+
+@client.command()
+async def nobreza(ctx):
+    channel = ctx.channel
+    if channel.name == '🤖┃servos':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT iduser FROM bank WHERE iduser=%s", (ctx.author.id, ))
+        bank = cur.fetchone()
+
+        cur.execute("SELECT iduser FROM fazenda WHERE iduser=%s", (ctx.author.id, ))
+        farm = cur.fetchone()
+
+        if bank == None or farm == None:
+            await ctx.send(f'{ctx.author.mention}, você precisa ter uma conta no Bank e ser um Camponês. \nUse `!criarconta` para criar sua conta no Bank \nUse `!farm` para ser um Camponês')
+        
+        else:
+            cur.execute("SELECT iduser FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+            nobreza = cur.fetchone()
+
+            if nobreza == None:
+                check = '▢'
+                cur.execute("INSERT INTO nobreza (nome, iduser, obras, gasto, nobre) VALUES (%s, %s, 0, 0, 0)", (ctx.author.name, ctx.author.id ))
+                cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
+                cookie = cur.fetchone()
+                if cookie[0] >= 100000:
+                    check = '▣'
+                cur.execute("SELECT loteid FROM fazenda WHERE iduser=%s", (ctx.author.id, ))
+                lotes = cur.fetchall()
+                if len(lotes[0]) == 1:
+                    qntlotes = 1
+                elif len(lotes[0]) == 2:
+                    qntlotes = 2
+                elif len(lotes[0]) == 3:
+                    qntlotes = 3
+                    check = '▣'
+                emb = discord.Embed(
+                    title='💎 ┃ RUMO À NOBREZA',
+                    description=f'''
+──────────────────────
+{ctx.author.mention}, aqui você verá seu progresso para se tornar um **NOBRE**
+
+
+{check} Cookies: ` {cookie[0]} / 100.000 `
+
+{check} Lotes: ` {qntlotes} / 3 `
+
+▢ Gasto com Obras: ` 0 / 10.000 `
+
+▢ Obras compradas: ` 0 / 300 `
+
+──────────────────────
+Nobres têm mais chances de se tornar um membro da realeza 👑
+
+                    ''', colour= 2337018
+                )
+
+                emb.set_thumbnail(url=ctx.author.avatar_url)
+
+                await ctx.send(embed = emb)
+
+                conn.commit()
+
+            else:
+                check = '▢'
+                cur.execute("SELECT nobre FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+                nobre = cur.fetchone()
+
+                cur.execute("SELECT gasto FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+                gasto = cur.fetchone()
+                if gasto[0] >= 10000:
+                    a = True
+                    check = '▣'
+                cur.execute("SELECT obras FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+                obras = cur.fetchone()
+                if obras[0] >= 300:
+                    b = True
+                    check = '▣'
+                cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
+                cookie = cur.fetchone()
+                if cookie[0] >= 100000:
+                    c = True
+                    check = '▣'
+                cur.execute("SELECT loteid FROM fazenda WHERE iduser=%s", (ctx.author.id, ))
+                lotes = cur.fetchall()
+
+                if len(lotes[0]) == 1:
+                    qntlotes = 1
+                elif len(lotes[0]) == 2:
+                    qntlotes = 2
+                elif len(lotes[0]) == 3:
+                    qntlotes = 3
+                    d = True
+                    check = '▣'
+
+                emb = discord.Embed(
+                    title='💎 ┃ RUMO À NOBREZA',
+                    description=f'''
+──────────────────────
+{ctx.author.mention}, aqui você verá seu progresso para se tornar um **NOBRE**
+
+
+{check} Cookies: ` {cookie[0]} / 100.000 `
+
+{check} Lotes: ` {qntlotes} / 3 `
+
+{check} Gasto com Obras: ` {gasto[0]} / 10.000 `
+
+{check} Obras compradas: ` {obras[0]} / 300 `
+
+──────────────────────
+Nobres têm mais chances de se tornar um membro da realeza 👑
+
+                    ''', colour= 2337018
+                )
+
+                emb.set_thumbnail(url=ctx.author.avatar_url)
+
+                await ctx.send(embed = emb)
+                
+                if a == True and b == True and c == True and d == True and nobre[0] == 0:
+                    cur.execute("UPDATE nobreza SET nobre=1 WHERE iduser=%s", (ctx.author.id, ))
+                    guild = ctx.guild
+                    nobreRole = discord.utils.get(guild.roles, name='Nobreza')
+                    await ctx.author.add_roles(nobreRole)
+                    await ctx.send(f"{ctx.author.mention}, PARABÉNS!! AGORA VOCÊ FAZ PARTE DA NOBREZA.")
+                    conn.commit()
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+    cur.close()
+    conn.close()
+
+@client.command()
+async def myart(ctx):
+    channel = ctx.channel
+    canal = client.get_channel(831196387969597451)
+    if channel.name == '📄┃discussão-artística':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT iduser FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+        nobreza = cur.fetchone()
+        if nobreza == None:
+            cur.execute("INSERT INTO nobreza (nome, iduser, obras, gasto, nobre) VALUES (%s, %s, 0, 0, 0)", (ctx.author.name, ctx.author.id))
+            conn.commit()
+
+        cur.execute("SELECT iduser FROM artistas WHERE iduser=%s", (ctx.author.id, ))
+        artistas = cur.fetchone()
+        if artistas == None:
+            cur.execute("INSERT INTO artistas (nome, iduser, totalvendas, lucro) VALUES (%s, %s, 0, 0)", (ctx.author.name, ctx.author.id))
+            conn.commit()
+        
+        cur.execute("SELECT totalvendas FROM artistas WHERE iduser=%s", (ctx.author.id, ))
+        totalvendas = cur.fetchone()
+        cur.execute("SELECT lucro FROM artistas WHERE iduser=%s", (ctx.author.id, ))
+        lucro = cur.fetchone()
+        cur.execute("SELECT obras FROM nobreza WHERE iduser=%s", (ctx.author.id, ))
+        obras = cur.fetchone()
+
+        emb = discord.Embed(
+            title='🎨 ┃ MY ART',
+            description=f'''
+──────────────────────
+{ctx.author.mention}
+
+🖼️ Obras vendidas: ` {totalvendas[0]} `
+
+💸 Obras compradas: ` {obras[0]} `
+
+💵 Lucro das vendas: ` {lucro[0]} cookies `
+
+──────────────────────
+            ''', colour = 15647503
+        )
+
+        emb.set_thumbnail(url=ctx.author.avatar_url)
+
+        await ctx.send(embed = emb)
+
+
+
+
+    else:
+        await ctx.send(f'Canal errado, bobinho(a)! Você só pode usar esse comando no canal {canal.mention}')
+    cur.close()
+    conn.close()
+
+@client.command()
+async def rank(ctx):
+    channel = ctx.channel
+    if channel.name == '🤖┃servos':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        
+        cur.execute("SELECT iduser FROM bank WHERE iduser=%s", (ctx.author.id, ))
+        bank = cur.fetchone()
+        if bank == None:
+            await ctx.send(f'{ctx.author.mention}, você não tem uma conta criada! Crie uma conta com `!criarconta`')
+        else:
+            cur.execute("SELECT cookies, iduser FROM bank ORDER BY cookies DESC LIMIT 5")
+            resultado5 = cur.fetchall()
+            
+            nome1 = client.get_user(resultado5[0][1])
+            nome2 = client.get_user(resultado5[1][1])
+            nome3 = client.get_user(resultado5[2][1])
+            nome4 = client.get_user(resultado5[3][1])
+            nome5 = client.get_user(resultado5[4][1])
+
+            cur.execute("SELECT cookies FROM bank WHERE iduser=%s", (ctx.author.id, ))
+            cookiesuser = cur.fetchone()
+
+            cur.execute("SELECT iduser FROM bank ORDER BY cookies DESC")
+            iduser = cur.fetchall()
+            
+            for pos, n in enumerate(iduser):
+                if n[0] == ctx.author.id:
+                    autor = pos+1
+                    break                
+                
+            
+            if autor > 5:
+                emb = discord.Embed(
+                    title='🍪 ┃ RANK',
+                    description=f'''
+──────────────────────
+{ctx.author.mention}
+
+**PESSOAS MAIS RICAS DO REINO DOCE:**
+
+🥇 **1º** ` {nome1.name} ` - ` {resultado5[0][0]} cookies ` 
+
+🥈 **2º** ` {nome2.name} ` - ` {resultado5[1][0]} cookies ` 
+
+🥉 **3º** ` {nome3.name} ` - ` {resultado5[2][0]} cookies ` 
+
+🏅 **4º** ` {nome4.name} ` - ` {resultado5[3][0]} cookies ` 
+
+🎖️ **5º** ` {nome5.name} ` - ` {resultado5[4][0]} cookies ` 
+
+
+**SUA POSIÇÃO:**
+
+**{autor}º** ` {ctx.author.name} ` - ` {cookiesuser[0]} cookies `
+──────────────────────
+                ''', colour = 16715320
+            )
+
+                emb.set_thumbnail(url=nome1.avatar_url)
+
+                await ctx.send(embed = emb)
+            
+            elif 5 >= autor > 1:
+
+                emb = discord.Embed(
+                    title='🍪 ┃ RANK',
+                    description=f'''
+──────────────────────
+{ctx.author.mention}
+
+**PESSOAS MAIS RICAS DO REINO DOCE:**
+
+🥇 **1º** ` {nome1.name} ` - ` {resultado5[0][0]} cookies ` 
+
+🥈 **2º** ` {nome2.name} ` - ` {resultado5[1][0]} cookies ` 
+
+🥉 **3º** ` {nome3.name} ` - ` {resultado5[2][0]} cookies ` 
+
+🏅 **4º** ` {nome4.name} ` - ` {resultado5[3][0]} cookies ` 
+
+🎖️ **5º** ` {nome5.name} ` - ` {resultado5[4][0]} cookies ` 
+
+
+
+**PARABÉNS! VOCÊ ESTÁ NO TOP 5** <:stonks:837767012797251644>
+──────────────────────
+                    ''', colour = 16715320
+                )
+
+                emb.set_thumbnail(url=nome1.avatar_url)
+
+                await ctx.send(embed = emb)
+
+
+
+            elif autor == 1:
+                emb = discord.Embed(
+                    title='🍪 ┃ RANK',
+                    description=f'''
+──────────────────────
+{ctx.author.mention}
+
+**PESSOAS MAIS RICAS DO REINO DOCE:**
+
+🥇 **1º** ` {nome1.name} ` - ` {resultado5[0][0]} cookies ` 
+
+🥈 **2º** ` {nome2.name} ` - ` {resultado5[1][0]} cookies ` 
+
+🥉 **3º** ` {nome3.name} ` - ` {resultado5[2][0]} cookies ` 
+
+🏅 **4º** ` {nome4.name} ` - ` {resultado5[3][0]} cookies ` 
+
+🎖️ **5º** ` {nome5.name} ` - ` {resultado5[4][0]} cookies ` 
+
+
+
+**WOW, VOCÊ É O DOCINHO MAIS RICO DO REINO DOCE!!** <:Finn:837761976020631583>
+──────────────────────
+                    ''', colour = 16715320
+                )
+
+                emb.set_thumbnail(url=nome1.avatar_url)
+
+                await ctx.send(embed = emb)
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+    
+    cur.close()
+    conn.close()
 
 
 # VV ====================== COMANDOS EXCLUSIVOS DA CATEGORIA RPG ====================== VV
 
 @client.command()
+@commands.cooldown(1, 5, commands.BucketType.user)
 async def rpg(ctx):
-    guild = ctx.guild
-    rpgRole = discord.utils.get(guild.roles, name='RPG')
-    
-    cargo_adicionado = False
-    for role in ctx.author.roles: #pra cada role no total de cargos da pessoa...
-        if role == rpgRole: #se a role for a rpgRole...
-            await ctx.author.remove_roles(rpgRole) #remove o cargo
-            await ctx.send(f'{ctx.author.mention} agora você não tem mais acesso à categoria RPG!') #manda a msg
-            cargo_adicionado = True #redefine a var
-            break #quebra o for 
+    channel = ctx.channel
+    if channel.name == '🤖┃servos':
+        guild = ctx.guild
+        rpgRole = discord.utils.get(guild.roles, name='RPG')
+        
+        cargo_adicionado = False
+        for role in ctx.author.roles: #pra cada role no total de cargos da pessoa...
+            if role == rpgRole: #se a role for a rpgRole...
+                await ctx.author.remove_roles(rpgRole) #remove o cargo
+                await ctx.send(f'{ctx.author.mention}, agora você não tem mais acesso à categoria RPG!') #manda a msg
+                cargo_adicionado = True #redefine a var
+                break #quebra o for 
 
-    #fora do for
-    if cargo_adicionado == False: #se cargo_adicionado for verdadeiro...
-        await ctx.author.add_roles(rpgRole) #adicionar a role
-        await ctx.send(f"{ctx.author.mention} agora você tem acesso à categoria RPG!")
-
+        #fora do for
+        if cargo_adicionado == False: #se cargo_adicionado for verdadeiro...
+            await ctx.author.add_roles(rpgRole) #adicionar a role
+            await ctx.send(f"{ctx.author.mention}, agora você tem acesso à categoria RPG!")
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
 
 
 
@@ -2586,9 +3650,6 @@ async def ajuda(ctx):
 title = 'COMANDOS GERAIS:',
 description = f'''
 
-`!oi` 
-BMO diz Bom dia
-
 `!farm`
 Você recebe cargo de Camponês e libera a categoria FAZENDA
 
@@ -2617,7 +3678,7 @@ BMO da dicas de desenhos fáceis. Só funciona no canal {canal.mention}
 BMO da dicas de desenhos difíceis. Só funciona no canal {canal.mention}
 ''',    
 
-colour = 16715320
+colour = 16715320 #timestamp=datetime.utcnow()
 )
 
     emb.set_author(name='BMO',
@@ -2824,6 +3885,132 @@ async def ficha(ctx, member: discord.Member):
 
 
 # VV ====================== OUTROS COMANDOS ====================== VV
+
+@client.command()
+async def realeza(ctx):
+    channel = ctx.channel
+    if channel.name == 'administração' and ctx.author.id == 611235322411352107:
+        guild = ctx.guild
+        princesa = discord.utils.get(guild.roles, name='PRINCESA')
+        imperador = discord.utils.get(guild.roles, name='IMPERADOR')
+        imperatriz = discord.utils.get(guild.roles, name='IMPERATRIZ')
+        duque = discord.utils.get(guild.roles, name='DUQUE')
+        duquesa = discord.utils.get(guild.roles, name='DUQUESA')
+        conde = discord.utils.get(guild.roles, name='CONDE')
+        condessa = discord.utils.get(guild.roles, name='CONDESSA')
+        lord = discord.utils.get(guild.roles, name='LORDE')
+        lady = discord.utils.get(guild.roles, name='LADY')
+        guarda = discord.utils.get(guild.roles, name='GUARDA REAL')
+        channel = client.get_channel(835225730471952431)
+        emb = discord.Embed(
+            title='👑 ┃ REALEZA',
+            description=f'''
+───────────────────────────
+**Todos os cargos da Realeza:**
+
+{princesa.mention} ➥ Cargo máximo do Reino Doce. Pertencente 
+a nossa Majestade, Jujuba. **Único**
+
+{imperador.mention} ➥ Cargo do dono deste servidor. **Único**
+{imperatriz.mention} ➥ Cargo da dona deste servidor. **Único**
+
+{duque.mention} ➥ Cargo dos amigos do imperador. **Vagas 1/3**
+{duquesa.mention} ➥ Cargo das amigas do imperador. **Vagas 1/3**
+
+{conde.mention} ➥ Cargo dos amigos do imperador. **Vagas 1/3**
+{condessa.mention} ➥ Cargo das amigas do imperador. **Vagas 3/3**
+
+{lord.mention} ➥ Cargo dos amigos do imperador. **Vagas 1/3**
+{lady.mention} ➥ Cargo das amigas do imperador. **Vagas 3/3**
+
+{guarda.mention} ➥ Eles que cortarão sua cabeça caso 
+não siga as regras. **Vagas 4/5**
+
+───────────────────────────
+            ''', colour = 16715320)
+
+        await channel.send(embed = emb)
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+@client.command()
+async def cargoart(ctx):
+    channel = ctx.channel
+    if channel.name == 'administração' and ctx.author.id == 611235322411352107:
+        guild = ctx.guild
+        leo = discord.utils.get(guild.roles, name='Leonardo da Vinci')
+        van = discord.utils.get(guild.roles, name='Vincent Van Gogh')
+        dali = discord.utils.get(guild.roles, name='Salvador Dalí')
+        mich = discord.utils.get(guild.roles, name='Michelangelo')
+        picasso = discord.utils.get(guild.roles, name='Pablo Picasso')
+        port = discord.utils.get(guild.roles, name='Candido Portinari')
+        amaral = discord.utils.get(guild.roles, name='Tarsila do Amaral')
+        sofo = discord.utils.get(guild.roles, name='Sofonisba Anguissola')
+        ex = discord.utils.get(guild.roles, name='Artista Experiente')
+        am = discord.utils.get(guild.roles, name='Artista Amador')
+        nov = discord.utils.get(guild.roles, name='Artista Novato')
+        art = discord.utils.get(guild.roles, name='Artes')
+        tk1 = discord.utils.get(guild.roles, name='Ticket Galeria')
+        tk2 = discord.utils.get(guild.roles, name='Ticket Obras à Venda')
+        tk3 = discord.utils.get(guild.roles, name='Ticket Ideias Desenhos')
+        canalservos = client.get_channel(831268231464353842)
+        canalgaleria = client.get_channel(831196291819634709)
+        canalvendas = client.get_channel(841800199127302221)
+        canalideias = client.get_channel(831196504618172437)
+        channel = client.get_channel(835225730471952431)
+        emb = discord.Embed(
+            title='🎨 ┃ ARTISTAS',
+            description=f'''
+───────────────────────────
+**Cargos únicos:**
+
+{leo.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{van.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{dali.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{mich.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{picasso.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{port.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{amaral.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{sofo.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+
+
+**Cargos por experiência:**
+
+{ex.mention} ➥ Cargo dado ao vender 500 obras
+{am.mention} ➥ Cargo dado ao vender 100 obras
+{nov.mention} ➥ Cargo dado ao vender 1 obra
+
+
+**Outros:**
+
+{art.mention} ➥ Cargo dado ao digitar `!artes` no canal {canalservos.mention}
+Só quem tiver esse cargo poderá ver a categoria **ARTES**
+
+Se usar o comando `!artes` novamente, você perderá o cargo e
+a categoria **ARTES** ficará oculta.
+
+{tk1.mention} ➥ Ticket para enviar uma obra 
+no canal `{canalgaleria}`
+
+{tk2.mention} ➥ Ticket para comprar uma obra 
+no canal `{canalvendas}`
+
+{tk3.mention} ➥ Ticket para pedir uma ideia 
+no canal `{canalideias}`
+
+───────────────────────────
+            ''', colour = 16715320)
+
+        await channel.send(embed = emb)
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+
+
+
+
 
 @client.command()
 async def oi(ctx):
@@ -3208,4 +4395,4 @@ async def unmute(ctx, member: discord.Member):
 
 
 
-client.run(TOKEN)
+client.run('TOKEN')
