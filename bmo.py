@@ -1,11 +1,7 @@
 import discord
-
 from discord.ext import commands, tasks
 import random
-
-from time import sleep
 import datetime
-
 from math import ceil, floor
 import json
 import os
@@ -231,52 +227,49 @@ ID da conta: ||`{idu}`||
 
 
 
-
 @client.command()
 async def pay(ctx, quant, member: discord.Member):
     conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
     cur = conn.cursor()
 
 
-    cur.execute("SELECT iduser, cookies FROM bank WHERE iduser = %s", (member.id,))
-    resultado = cur.fetchmany()
+    cur.execute("SELECT iduser FROM bank WHERE iduser = %s", (ctx.author.id,))
+    resultado = cur.fetchone()
 
     
-    if resultado == []:
+    if resultado == None:
         await ctx.send(f'Essa pessoa não tem uma conta criada!')
-
-    else:
-        for r in resultado:
-            idu = r[0]
-            saldo = r[1]
-            
-
-        cur.execute("SELECT iduser, cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
-        resultado2 = cur.fetchmany()
+        await ctx.send('Você não tem uma conta criada! Crie uma conta com `!criarconta`')
+    elif int(quant) <= 0:
+        await ctx.send('Transação inválida!')
+    elif resultado != None and int(quant) > 0:
         
-        if resultado2 == []:
-            await ctx.send('Você não tem uma conta criada! Crie uma conta com `!criarconta`')
-
-        else:
-            for r in resultado2:
-                idu2 = r[0]
-                saldo2 = r[1]
-            if saldo2 < int(quant):
+        cur.execute("SELECT iduser FROM bank WHERE iduser = %s", (member.id,))
+        resultado2 = cur.fetchone()
+        
+        if resultado2 == None:
+            await ctx.send(f'Essa pessoa não tem uma conta criada!')
+        elif member.id == ctx.author.id:
+            await ctx.send(f'Você não pode transferir dinheiro para você mesmo!')
+        
+        elif member.id != ctx.author.id and resultado2 != None:
+            
+            cur.execute("SELECT cookies FROM bank WHERE iduser = %s", (ctx.author.id,))
+            cookies = cur.fetchone()
+            if cookies[0] < int(quant):
                 await ctx.send('Cookies insuficientes!')
-            else:
+
+            
+            elif cookies[0] >= int(quant):
                 
-                total = saldo + int(quant)
-                total2 = saldo2 - int(quant)
+                cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (int(quant), member.id))
                 
-                
-                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (total, member.id))
+
+                cur.execute("UPDATE bank SET cookies=cookies - %s WHERE iduser=%s", (int(quant), ctx.author.id))
                 conn.commit()
 
-                cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (total2, ctx.author.id))
-                conn.commit()
-
                 
-                await ctx.send(f'{ctx.author.mention}, transação realizada com sucesso! Novo saldo: `{total2} cookies`')
+                await ctx.send(f'💸 | {ctx.author.mention} Transação realizada com sucesso! {member.mention} recebeu `{quant} cookies`')
     cur.close()
     conn.close()
 
@@ -308,6 +301,8 @@ async def farm(ctx):
                     
                 guild = ctx.guild
                 campRole = discord.utils.get(guild.roles, name='Camponês')
+                forestRole = discord.utils.get(guild.roles, name='Forasteiro(a)')
+                await ctx.author.remove_roles(forestRole)
                 await ctx.author.add_roles(campRole)
                 emb = discord.Embed(
                 title = '🌱 FAZENDA:',
@@ -380,9 +375,9 @@ Para ver quantas sementes e quais lotes você possui, digite `!myfarm`
 > Marshmallows demoram 24 horas para você poder colher
 > 
 > O comando para plantar é:
-> `!plantar [sementes] [letra do lote]`
+> `!plantar [sementes]`
 > 
-> Ex: `!plantar 50 A`
+> Ex: `!plantar 50`
 > 
 > Não é possível plantar menos que 50 sementes.
 > Ao plantar em um lote ele ficará indisponível para o plantio.
@@ -392,9 +387,9 @@ Para ver quantas sementes e quais lotes você possui, digite `!myfarm`
 **Colheita:**
 
 > O comando para colher é:
-> `!colher [letra do lote]`
+> `!colher`
 > 
-> Ex: `!colher A`
+> Ex: `!colher`
 > 
 > Use `!lucrof` para ver os lucros de cada semente
 
@@ -2079,7 +2074,7 @@ async def colher(ctx):
         if resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
         
- 
+
         
         if resultado_lotes[0] == 0: 
             cur.execute("SELECT dataa, horaa FROM fazenda WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
@@ -2154,6 +2149,7 @@ Use o comando `!myfarm` para mais informações.
                 else:
                     await ctx.send(f'Tempo que falta para colher: `{formatar}`')
             elif vencida <= datenow:
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid='A'", (ctx.author.id, ))
                 emb = discord.Embed(
                 title = ':skull_crossbones: AS JUJUBAS ESTÃO TODAS MORTAS :skull_crossbones:',
                 description = f'''
@@ -2172,7 +2168,7 @@ Use o comando `!myfarm` para mais informações.
                 colour = 65280
                 )
 
-                
+                conn.commit()
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
                 await ctx.send(embed = emb)
@@ -2191,7 +2187,10 @@ Use o comando `!myfarm` para mais informações.
         cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
         resultado_lotes = cur.fetchone()
 
-        if resultado_lotes[0] == 1:
+        if resultado_lotes == None:
+            await ctx.send(f'{ctx.author.mention}, você não tem o `lote B`! Compre-o na loja.')
+
+        elif resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
         
         
@@ -2267,6 +2266,7 @@ Use o comando `!myfarm` para mais informações.
                 else:
                     await ctx.send(f'Tempo que falta para colher: `{formatar}`')
             elif vencida <= datenow:
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid='B'", (ctx.author.id, ))
                 emb = discord.Embed(
                 title = ':skull_crossbones: OS ALGODÕES-DOCES ESTÃO TODOS MORTOS :skull_crossbones:',
                 description = f'''
@@ -2285,7 +2285,7 @@ Use o comando `!myfarm` para mais informações.
                 colour = 65280
                 )
 
-                
+                conn.commit()
 
                 emb.set_thumbnail(url="https://cdn.discordapp.com/attachments/831946320200728577/840330089525805096/pngwing.com_1.png")
                 await ctx.send(embed = emb)
@@ -2302,11 +2302,14 @@ Use o comando `!myfarm` para mais informações.
 
         cur.execute("SELECT lotes FROM fazenda WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
         resultado_lotes = cur.fetchone()
+        
 
-
-
-        if resultado_lotes[0] == 1:
+        if resultado_lotes == None:
+            await ctx.send(f'{ctx.author.mention}, você não tem o `lote C`! Compre-o na loja.')
+        
+        elif resultado_lotes[0] == 1:
             await ctx.send(f'{ctx.author.mention}, você não plantou nada nesse lote!')
+
         
         
         if resultado_lotes[0] == 0: 
@@ -2381,6 +2384,8 @@ Use o comando `!myfarm` para mais informações.
                 else:
                     await ctx.send(f'Tempo que falta para colher: `{formatar}`')
             elif vencida <= datenow:
+                cur.execute("UPDATE fazenda SET lotes=1 WHERE iduser = %s AND loteid='C'", (ctx.author.id, ))
+                conn.commit()
                 emb = discord.Embed(
                 title = ':skull_crossbones: OS MARSHMALLOWS ESTÃO TODOS MORTOS :skull_crossbones:',
                 description = f'''
@@ -2412,10 +2417,62 @@ Use o comando `!myfarm` para mais informações.
     conn.close()
 
 @client.command()
+async def sell(ctx, semente):
+    semente = semente.lower()
+    channel = ctx.channel
+    if channel.name == '💸┃loja':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT s_j, s_ad, s_m FROM fazenda WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
+        resultado = cur.fetchall()
+
+        if resultado[0][0] > 0 and semente == 'j':
+            total = resultado[0][0] * 0.1
+            cur.execute("UPDATE fazenda SET s_j=0 WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
+            cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (total, ctx.author.id))
+            await ctx.send(f'''{ctx.author.mention}, **VENDA** realizada com sucesso!!
+Você vendeu `todas as sementes de jujuba`
+                ''')
+
+        elif resultado[0][1] > 0 and semente == 'ad':
+            total = resultado[0][1] * 0.2
+            cur.execute("UPDATE fazenda SET s_ad=0 WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
+            cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (total, ctx.author.id))
+            await ctx.send(f'''{ctx.author.mention}, **VENDA** realizada com sucesso!!
+Você vendeu `todas as sementes de algodão-doce`
+                ''')
+
+        elif resultado[0][2] > 0 and semente == 'm':
+            total = resultado[0][2] * 2
+            cur.execute("UPDATE fazenda SET s_m=0 WHERE iduser=%s AND loteid='A'", (ctx.author.id, ))
+            cur.execute("UPDATE bank SET cookies=cookies + %s WHERE iduser=%s", (total, ctx.author.id))
+            await ctx.send(f'''{ctx.author.mention}, **VENDA** realizada com sucesso!!
+Você vendeu `todas as sementes de marshmallow`
+                ''')
+        elif resultado[0][0] == 0 and semente == 'j':
+            await ctx.send(f'{ctx.author.mention}, você não tem sementes de jujuba para vender!')
+        elif resultado[0][1] == 0 and semente == 'ad':
+            await ctx.send(f'{ctx.author.mention}, você não tem sementes de algodão-doce para vender!')
+        elif resultado[0][2] == 0 and semente == 'm':
+            await ctx.send(f'{ctx.author.mention}, você não tem sementes de marshmallow para vender!')
+
+        conn.commit()
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+    cur.close()
+    conn.close()
+
+
+@client.command()
 async def loja(ctx):
-    emb = discord.Embed(
-        title = 'LOJA DOÇURAS:',
-        description = """
+    channel = ctx.channel
+    if channel.name == 'administração' and ctx.author.id == 611235322411352107:
+        canal = client.get_channel(839548779417567263)
+        emb = discord.Embed(
+            title = 'LOJA DOÇURAS:',
+            description = """
 
 Vendemos sementes e lotes de terra!
 
@@ -2472,6 +2529,18 @@ Vendemos sementes e lotes de terra!
 > 4000 cookies ...... `!buy 2000m`
 
 
+**VENDER SEMENTES**
+
+> Vender todas as sementes de Jujuba
+> Comando ........... `!sell j`
+> 
+> Vender todas as sementes de Algodão-doce
+> Comando ........... `!sell ad`
+> 
+> Vender todas as sementes de Marshmallow
+> Comando ........... `!sell m`
+
+
 
 
 **LOTES DE TERRA:**
@@ -2493,13 +2562,11 @@ Vendemos sementes e lotes de terra!
         colour = 65280
     )
 
-    """ emb.set_author(name='BMO') """
-    #icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
 
-    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/840316972255281232/lojinha222.png')
-
-    
-    await ctx.send(embed=emb)
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/840316972255281232/lojinha222.png')
+        await canal.send(embed=emb)
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
 
 
 @client.command()
@@ -2569,11 +2636,11 @@ Veja aqui os lucros das sementes!
 
     
 
-    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/841432227413229599/stonks.jpg')
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/841432227413229599/stonks.jpg')
+        await ctx.send(embed=emb)
 
-    
-    await ctx.send(embed=emb)
-
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
 
 
 # VV ====================== TASKS LOOP ====================== VV
@@ -2893,7 +2960,7 @@ async def vender(ctx, idart, preço):
                         break
                 if autor == autor2 and 10 <= int(preço) <= 30 and a == True:
                     
-
+                   
                     cur.execute("SELECT iduser FROM artistas WHERE iduser=%s", (ctx.author.id, ))
                     resultado = cur.fetchone()
                     if resultado == None:
@@ -2903,13 +2970,16 @@ async def vender(ctx, idart, preço):
                     resultado2 = cur.fetchone()
                     if resultado2 == None:
                         cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 1)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                        
                     else:
                         cur.execute("SELECT idnum FROM vendas WHERE iduser=%s", (ctx.author.id, ))
                         resultado3 = cur.fetchall()
                         if len(resultado3) == 1:
                             cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 2)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                           
                         elif len(resultado3) == 2:
                             cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 3)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
+                            
                         elif len(resultado3) == 3:
                             cur.execute("INSERT INTO vendas (nome, iduser, vendas, preço, idart, idnum) VALUES (%s, %s, 0, %s, %s, 4)", (ctx.author.name, ctx.author.id, int(preço), int(idart)))
                             cur.execute("DELETE FROM vendas WHERE iduser=%s AND idnum=1", (ctx.author.id, ))
@@ -2917,12 +2987,15 @@ async def vender(ctx, idart, preço):
                             cur.execute("UPDATE vendas SET idnum = 1 WHERE iduser=%s AND idnum=2", (ctx.author.id, ))
                             cur.execute("UPDATE vendas SET idnum = 2 WHERE iduser=%s AND idnum=3", (ctx.author.id, ))
                             cur.execute("UPDATE vendas SET idnum = 3 WHERE iduser=%s AND idnum=4", (ctx.author.id, ))
-
+                           
 
 
 
                     await ctx.send(f'{ctx.author.mention}, parabéns! Sua obra foi colocada à venda \nno canal {channelvendas.mention}')
                     conn.commit()
+
+                    
+
 
                     emb = discord.Embed(
                         title='OBRA À VENDA',
@@ -2939,6 +3012,7 @@ Para comprar use `!comprar {idart}`
                     )
                     emb.set_thumbnail(url=ctx.author.avatar_url)
                     emb.set_image(url=img[0])
+                    
                     await channelvendas.send(embed = emb)
                     cur.close()
                     conn.close()
@@ -3131,14 +3205,16 @@ async def comprar(ctx, idart):
 
                 cur.execute("SELECT vendas FROM vendas WHERE idart= %s", (int(idart), ))
                 hall = cur.fetchone()
-
+                cur.execute("SELECT iduser FROM vendas WHERE idart= %s", (int(idart), ))
+                user = cur.fetchone()
+                userr = client.get_user(user[0])
                 if hall[0] == 10:
                     canalhall = client.get_channel(831944832925696000)
                     emb = discord.Embed(
                             title='⭐ OBRA PRIMA ⭐',
                             description=f'''
 
-**PARABÉNS, {ctx.author.mention}!!**
+**PARABÉNS, {userr.mention}!!**
 
 Você vendeu `10 cópias` dessa obra. 
 
@@ -3153,26 +3229,50 @@ Você vendeu `10 cópias` dessa obra.
 
             
                 edu = client.get_user(611235322411352107)
-                await edu.send(f'Boa chefe! Imposto pago pela compra de uma obra! \n\n`Artista:` {artista.mention} \n`Comprador:` {ctx.author.mention} \n`Imposto:` {imposto} cookies')
+                await edu.send(f'Boa chefe! Imposto pago pela compra de uma obra! \n\n`Artista:` {artista.name} \n`Comprador:` {ctx.author.name} \n`Imposto:` {imposto} cookies')
                 await asyncio.sleep(20)
                 carol = client.get_user(580804486629687306)
-                await carol.send(f'Vossa majestade, tivemos um imposto pago pela compra de uma obra! \n\n`Artista:` {artista.mention} \n`Comprador:` {ctx.author.mention} \n`Imposto:` {imposto} cookies')
+                await carol.send(f'Vossa majestade, tivemos um imposto pago pela compra de uma obra! \n\n`Artista:` {artista.name} \n`Comprador:` {ctx.author.name} \n`Imposto:` {imposto} cookies')
                 await asyncio.sleep(20)
 
                 emb = discord.Embed(
-                            title='OBRA VENDIDA',
+                            title='💵 ┃ OBRA VENDIDA',
                             description=f'''
 
-**{ctx.author.mention} comprou sua obra!**
+**{ctx.author.name}** comprou sua obra!
 
 VALOR GANHO: `{valor} cookies`
 
+TOTAL DE VENDAS: `{hall[0]}`
 
                             ''', colour= 15647503
                         )
                 emb.set_thumbnail(url=ctx.author.avatar_url)
                 emb.set_image(url=img[0])
                 await artista.send(embed = emb)
+
+                await asyncio.sleep(10)
+
+                emb = discord.Embed(
+                            title='💸 ┃ OBRA COMPRADA',
+                            description=f'''
+
+**Você comprou a obra de {userr.name}!**
+
+VALOR GASTO: `{preço[0]} cookies`
+
+
+                            ''', colour= 15647503
+                        )
+                emb.set_thumbnail(url=ctx.author.avatar_url)
+                emb.set_image(url=img[0])
+                await ctx.author.send(embed = emb)
+
+
+
+
+
+
 
 
 
@@ -3320,7 +3420,9 @@ Nobres têm mais chances de se tornar um membro da realeza 👑
                     title='💎 ┃ RUMO À NOBREZA',
                     description=f'''
 ──────────────────────
-{ctx.author.mention}, aqui você verá seu progresso para se tornar um **NOBRE**
+{ctx.author.mention}
+
+Aqui você verá seu progresso para se tornar um **NOBRE**
 
 
 {check} Cookies: ` {cookie[0]} / 100.000 `
@@ -3579,12 +3681,12 @@ async def rodar(ctx, dado):
     num2 = dado[fd+1:]
     cont = 0
     await ctx.send('Rodando...')
-    sleep(2)
+    await asyncio.sleep(2)
     for n in range(1, int(num1)+1):
         rd = random.randint(1, int(num2))
         cont += rd
         await ctx.send(f'`DADO = [{rd}]`')
-        sleep(2)
+        await asyncio.sleep(2)
     await ctx.send(f'`TOTAL = {cont}`')
 
 
@@ -3597,7 +3699,7 @@ async def d(ctx, numero):
     if channel.name == '🎲┃comandos':
         rodar = random.randint(1, int(numero))
         await ctx.send('Rodando...')
-        sleep(2)
+        await asyncio.sleep(2)
         await ctx.send(f'`DADO = [{rodar}]`')
     else:
         await ctx.send('Canal errado, bobinho(a)!')
@@ -3732,48 +3834,47 @@ colour = 16715320
 
 @client.command()
 async def adm(ctx):
-    emb = discord.Embed(title='COMANDOS DE PUNIÇÕES', 
-    description=f'''
-    `!kickar [id] [motivo]`
-    BMO expulsa um infrator do Reino Doce
-
-    `!banir [id] [motivo]`
-    BMO dá a ordem para a execução do criminoso
-
-    `!unban [id]`
-    BMO ressuscita uma pessoa das trevas
-
-    `!mute03 [id] [motivo]`
-    BMO silencia um plebeu por 30 minutos
-
-    `!mute1 [id] [motivo]`
-    BMO silencia um plebeu por 1 hora
-
-    `!mute2 [id] [motivo]`
-    BMO silencia um plebeu por 2 horas
-    
-    `!mute3 [id] [motivo]`
-    BMO silencia um plebeu por 3 horas
-
-    `!mute10 [id] [motivo]`
-    BMO silencia um plebeu por 10 horas
-
-    `!unmute [id]`
-    BMO retira o silenciamento do plebeu''',
-
-    colour = 16715320
-    )
-
-    emb.set_author(name='ADM',
-    icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
-
-    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
     channel = ctx.channel
     if channel.name == 'administração':
+        emb = discord.Embed(title='COMANDOS DE PUNIÇÕES', 
+        description=f'''
+**ESSES COMANDOS SÓ FUNCIONAM NO CANAL ADMINISTRAÇÃO**
+
+`!kickar [id] [motivo]`
+BMO expulsa um infrator do Reino Doce
+
+`!banir [id] [motivo]`
+BMO dá a ordem para a execução do criminoso
+
+`!unban [id]`
+BMO ressuscita uma pessoa das trevas
+
+`!algemar [id]`
+BMO algema o meliante e o leva para a Delegacia. Todos os canais ficarão ocultos para o meliante
+
+`!liberar [id]`
+BMO tira as algemas e libera o meliante da Delegacia
+
+`!prender [id] [motivo]`
+BMO transfere um meliante da Delegacia para a Cadeia
+
+`!soltar [id]`
+BMO solta um meliante da cadeia e o leva para a delegacia
+    ''',
+
+        colour = 16715320
+        )
+
+        emb.set_author(name='ADM')
+
+        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+        
+    
         await ctx.send(embed = emb)
     
 
-
+    else:
+        await ctx.send('Você não tem permissão para usar esse comando!')
 
 
 
@@ -3887,6 +3988,72 @@ async def ficha(ctx, member: discord.Member):
 # VV ====================== OUTROS COMANDOS ====================== VV
 
 @client.command()
+async def vagas(ctx):
+    channel = ctx.channel
+    if channel.name == 'administração' and ctx.author.id == 611235322411352107:
+        guild = ctx.guild
+ 
+        duque = discord.utils.get(guild.roles, name='DUQUE')
+        duquesa = discord.utils.get(guild.roles, name='DUQUESA')
+        conde = discord.utils.get(guild.roles, name='CONDE')
+        condessa = discord.utils.get(guild.roles, name='CONDESSA')
+        lord = discord.utils.get(guild.roles, name='LORDE')
+        lady = discord.utils.get(guild.roles, name='LADY')
+        guarda = discord.utils.get(guild.roles, name='GUARDA REAL')
+        leo = discord.utils.get(guild.roles, name='Leonardo da Vinci')
+        van = discord.utils.get(guild.roles, name='Vincent Van Gogh')
+        dali = discord.utils.get(guild.roles, name='Salvador Dalí')
+        mich = discord.utils.get(guild.roles, name='Michelangelo')
+        picasso = discord.utils.get(guild.roles, name='Pablo Picasso')
+        port = discord.utils.get(guild.roles, name='Candido Portinari')
+        amaral = discord.utils.get(guild.roles, name='Tarsila do Amaral')
+        sofo = discord.utils.get(guild.roles, name='Sofonisba Anguissola')
+        lara = discord.utils.get(guild.roles, name='Lara Pasternak')
+        ophe = discord.utils.get(guild.roles, name='Ophelia')
+        nikkie = discord.utils.get(guild.roles, name='Nikkie de Jager')
+        channel = client.get_channel(835225730471952431)
+
+        emb = discord.Embed(
+            title='📄 ┃ VAGAS',
+            description=f'''
+───────────────────────────
+**VAGAS Realeza:**
+
+{duque.mention} ➥ Vagas 1/3
+{duquesa.mention} ➥ Vagas 1/3
+
+{conde.mention} ➥ Vagas 1/3
+{condessa.mention} ➥ Vagas 3/3
+
+{lord.mention} ➥ Vagas 1/3
+{lady.mention} ➥ Vagas 3/3
+
+{guarda.mention} ➥ Vagas 4/5
+
+
+**VAGAS Artistas:**
+
+{leo.mention} ➥ Vagas 1/1
+{van.mention} ➥ Vagas 1/1
+{dali.mention} ➥ Vagas 1/1
+{mich.mention} ➥ Vagas 1/1
+{picasso.mention} ➥ Vagas 1/1
+{port.mention} ➥ Vagas 1/1
+{amaral.mention} ➥ Vagas 1/1
+{sofo.mention} ➥ Vagas 1/1
+{lara.mention} ➥ Vagas 1/1
+{ophe.mention} ➥ Vagas 1/1
+{nikkie.mention} ➥ Vagas 1/1
+
+───────────────────────────
+            ''', colour = 16715320)
+
+        await channel.send(embed = emb)
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+@client.command()
 async def realeza(ctx):
     channel = ctx.channel
     if channel.name == 'administração' and ctx.author.id == 611235322411352107:
@@ -3909,22 +4076,22 @@ async def realeza(ctx):
 **Todos os cargos da Realeza:**
 
 {princesa.mention} ➥ Cargo máximo do Reino Doce. Pertencente 
-a nossa Majestade, Jujuba. **Único**
+a nossa Majestade, Jujuba. 
 
-{imperador.mention} ➥ Cargo do dono deste servidor. **Único**
-{imperatriz.mention} ➥ Cargo da dona deste servidor. **Único**
+{imperador.mention} ➥ Cargo do dono deste servidor. 
+{imperatriz.mention} ➥ Cargo da dona deste servidor.
 
-{duque.mention} ➥ Cargo dos amigos do imperador. **Vagas 1/3**
-{duquesa.mention} ➥ Cargo das amigas do imperador. **Vagas 1/3**
+{duque.mention} ➥ Cargo dos amigos do imperador. 
+{duquesa.mention} ➥ Cargo das amigas do imperador. 
 
-{conde.mention} ➥ Cargo dos amigos do imperador. **Vagas 1/3**
-{condessa.mention} ➥ Cargo das amigas do imperador. **Vagas 3/3**
+{conde.mention} ➥ Cargo dos amigos do imperador.
+{condessa.mention} ➥ Cargo das amigas do imperador. 
 
-{lord.mention} ➥ Cargo dos amigos do imperador. **Vagas 1/3**
-{lady.mention} ➥ Cargo das amigas do imperador. **Vagas 3/3**
+{lord.mention} ➥ Cargo dos amigos do imperador. 
+{lady.mention} ➥ Cargo das amigas do imperador. 
 
 {guarda.mention} ➥ Eles que cortarão sua cabeça caso 
-não siga as regras. **Vagas 4/5**
+não siga as regras. 
 
 ───────────────────────────
             ''', colour = 16715320)
@@ -3933,6 +4100,40 @@ não siga as regras. **Vagas 4/5**
 
     else:
         await ctx.send('Canal errado, bobinho(a)!')
+
+
+@client.command()
+async def cargonobreza(ctx):
+    channel = ctx.channel
+    if channel.name == 'administração' and ctx.author.id == 611235322411352107:
+        guild = ctx.guild
+        nobre = discord.utils.get(guild.roles, name='Nobreza')
+        canalservos = client.get_channel(831268231464353842)
+        channel = client.get_channel(835225730471952431)
+        emb = discord.Embed(
+            title='💎 ┃ NOBREZA',
+            description=f'''
+───────────────────────────
+**O MAIS ALTO CARGO ABAIXO DA REALEZA**
+
+{nobre.mention} ➥ Cargo de alguém que se tornou um nobre. 
+
+Use o comando `!nobreza` no canal {canalservos.mention}
+para ver os requisitos necessários.
+
+
+Nobres têm mais chances de se tornar um membro da realeza 👑
+───────────────────────────
+            ''', colour = 16715320)
+
+        await channel.send(embed = emb)
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+
+
+
+
 
 @client.command()
 async def cargoart(ctx):
@@ -3947,6 +4148,9 @@ async def cargoart(ctx):
         port = discord.utils.get(guild.roles, name='Candido Portinari')
         amaral = discord.utils.get(guild.roles, name='Tarsila do Amaral')
         sofo = discord.utils.get(guild.roles, name='Sofonisba Anguissola')
+        lara = discord.utils.get(guild.roles, name='Lara Pasternak')
+        ophe = discord.utils.get(guild.roles, name='Ophelia')
+        nikkie = discord.utils.get(guild.roles, name='Nikkie de Jager')
         ex = discord.utils.get(guild.roles, name='Artista Experiente')
         am = discord.utils.get(guild.roles, name='Artista Amador')
         nov = discord.utils.get(guild.roles, name='Artista Novato')
@@ -3965,14 +4169,17 @@ async def cargoart(ctx):
 ───────────────────────────
 **Cargos únicos:**
 
-{leo.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{van.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{dali.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{mich.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{picasso.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{port.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{amaral.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
-{sofo.mention} ➥ Cargo de um artista famoso do Reino. **Vagas 1/1**
+{leo.mention} ➥ Cargo de um artista famoso do Reino. 
+{van.mention} ➥ Cargo de um artista famoso do Reino. 
+{dali.mention} ➥ Cargo de um artista famoso do Reino. 
+{mich.mention} ➥ Cargo de um artista famoso do Reino. 
+{picasso.mention} ➥ Cargo de um artista famoso do Reino. 
+{port.mention} ➥ Cargo de um artista famoso do Reino. 
+{amaral.mention} ➥ Cargo de uma artista famosa do Reino. 
+{sofo.mention} ➥ Cargo de uma artista famosa do Reino. 
+{lara.mention} ➥ Cargo de uma artista famosa do Reino. 
+{ophe.mention} ➥ Cargo de uma artista famosa do Reino. 
+{nikkie.mention} ➥ Cargo de uma artista famosa do Reino. 
 
 
 **Cargos por experiência:**
@@ -4007,6 +4214,86 @@ no canal `{canalideias}`
     else:
         await ctx.send('Canal errado, bobinho(a)!')
 
+
+@client.command()
+async def cargos(ctx):
+    channel = ctx.channel
+    if channel.name == 'administração' and ctx.author.id == 611235322411352107:
+        guild = ctx.guild
+        bobo = discord.utils.get(guild.roles, name='Bobo da Corte')
+        taberna = discord.utils.get(guild.roles, name='Taberneiro')
+        mercador = discord.utils.get(guild.roles, name='Mercador')
+        camp = discord.utils.get(guild.roles, name='Camponês')
+        plebe = discord.utils.get(guild.roles, name='Plebeu')
+        forest = discord.utils.get(guild.roles, name='Forasteiro(a)')
+        rpg = discord.utils.get(guild.roles, name='RPG')
+        mestre = discord.utils.get(guild.roles, name='RPG Mestre')
+        jog = discord.utils.get(guild.roles, name='RPG Jogadores')
+        arauto = discord.utils.get(guild.roles, name='Arauto')
+        alg = discord.utils.get(guild.roles, name='Algemado(a)')
+        preso = discord.utils.get(guild.roles, name='Presidiário(a)')
+        canalservos = client.get_channel(831268231464353842)
+        channel = client.get_channel(835225730471952431)
+        emb = discord.Embed(
+            title='🌱 ┃ CARGOS COMUNS',
+            description=f'''
+───────────────────────────
+
+{bobo.mention} ➥ Cargo dado para quem posta muitos memes.
+{taberna.mention} ➥ Cargo dado para quem frequenta muito a taberna.
+{mercador.mention} ➥ Cargo dado para quem negocia muito.
+
+
+
+**FAZENDA: **
+
+{camp.mention} ➥ Cargo dado ao enviar o comando `!farm`
+no canal {canalservos.mention}.
+
+Quando receber esse cargo será liberado a categoria 
+Fazenda. Você poderá plantar e colher para ganhar cookies.
+
+Leia o tutorial ao utilizar o comando `!farmt`
+
+
+
+{plebe.mention} ➥ Cargo dado para membros chatos.
+{forest.mention} ➥ Cargo dado ao confirmar que leu as regras.
+Ele é removido ao virar um camponês.
+
+
+
+**RPG:**
+
+{rpg.mention} ➥ Cargo dado ao enviar o comando `!rpg`
+no canal {canalservos.mention}.
+
+Ele abrirá uma passagem secreta e você terá acesso à 
+categoria RPG.
+
+Se utilizar o mesmo comando novamente, a passagem secreta
+fechará.
+
+{mestre.mention} ➥ Cargo dado para quem for mestrar no RPG
+{jog.mention} ➥ Cargo dado para quem confirmar presença no RPG
+
+
+
+{arauto.mention} ➥ Cargo para receber notificações e avisos.
+
+
+
+**CADEIA NELES**
+
+{alg.mention} ➥ Cargo para a Guarda Real levar o meliante para a delegacia.
+{preso.mention} ➥ Cargo de quem descumpriu a lei.
+───────────────────────────
+            ''', colour = 16715320)
+
+        await channel.send(embed = emb)
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
 
 
 
@@ -4059,7 +4346,7 @@ async def ideia1(ctx):
         
 
     else:
-        msg = await ctx.send('Canal errado, bobinho(a)!')
+        await ctx.send('Canal errado, bobinho(a)!')
 
 
 @client.command()
@@ -4088,7 +4375,7 @@ async def ideia2(ctx):
         
 
     else:
-        msg = await ctx.send('Canal errado, bobinho(a)!')
+        await ctx.send('Canal errado, bobinho(a)!')
         
 
 
@@ -4171,227 +4458,229 @@ async def unban(ctx, *, member):
             await ctx.send(f'{user.mention} foi desbanido')
             return
 
-@client.command(description='Mutes the specified user.')
-@commands.has_permissions(manage_messages=True)
-async def mute03(ctx, member: discord.Member, *, reason=None):
+
+@client.command()
+async def algemar(ctx, member: discord.Member):
     channel = ctx.channel
     if channel.name == 'punições-comandos':
-        guild = ctx.guild
-        mutedRole = discord.utils.get(guild.roles, name='Presidiário')
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
 
-        if not mutedRole:
-            mutedRole = await guild.create_role(name='Presidiário')
+        cur.execute("SELECT iduser FROM cadeia WHERE iduser=%s", (member.id, ))
+        resultado = cur.fetchone()
 
-            for channel in guild.channels:
-                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+        bandeira1 = False
+        bandeira2 = False
+        if resultado == None:
+            cur.execute("INSERT INTO cadeia (nome, iduser, artes, camp, rpg, verify, algemado, preso) VALUES (%s, %s, 0, 0, 0, 0, 1, 0)", (member.name, member.id))
+            bandeira1 = True
+        elif resultado != None:
+            cur.execute("SELECT algemado FROM cadeia WHERE iduser=%s", (member.id, ))
+            algemado = cur.fetchone()
+            cur.execute("SELECT preso FROM cadeia WHERE iduser=%s", (member.id, ))
+            preso = cur.fetchone()
 
-        
-        channel = client.get_channel(831197248884703283)
-        emb = discord.Embed(
-        title = 'PRESO(A)!!',
-        description = f'{member.mention} foi algemado(a) e levado(a) para a prisão.',
-        colour = 16715320
-    )
+            if preso[0] == 1:
+                await ctx.send(f'{ctx.author.mention}, esse membro já está preso!!')
+            elif algemado[0] == 1:
+                await ctx.send(f'{ctx.author.mention}, esse membro já está algemado!')
+            elif preso[0] == 0 and algemado[0] == 0:
+                cur.execute("UPDATE cadeia SET algemado=1 WHERE iduser=%s", (member.id, ))
+                bandeira2 = True
 
-        emb.set_author(name='BMO',
-        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+               
+        if bandeira1 == True or bandeira2 == True:
+            guild = ctx.guild
+            artRole = discord.utils.get(guild.roles, name='Artes')
+            campRole = discord.utils.get(guild.roles, name='Camponês')
+            rpgRole = discord.utils.get(guild.roles, name='RPG')
+            verifyRole = discord.utils.get(guild.roles, name='verificado')
+            
+            await ctx.send(f'{ctx.author.mention} está **ALGEMANDO** {member.name}... (Isso pode demorar até 60 segundos)')
+            for role in member.roles: 
+                if role == artRole:
+                    cur.execute("UPDATE cadeia SET artes=1 WHERE iduser=%s", (member.id, )) 
+                    await member.remove_roles(artRole)
+                    await asyncio.sleep(5)
+                if role == campRole:
+                    cur.execute("UPDATE cadeia SET camp=1 WHERE iduser=%s", (member.id, )) 
+                    await member.remove_roles(campRole)
+                    await asyncio.sleep(5)
+                if role == rpgRole:
+                    cur.execute("UPDATE cadeia SET rpg=1 WHERE iduser=%s", (member.id, )) 
+                    await member.remove_roles(rpgRole)
+                    await asyncio.sleep(5)
+                if role == verifyRole:
+                    cur.execute("UPDATE cadeia SET verify=1 WHERE iduser=%s", (member.id, )) 
+                    await member.remove_roles(verifyRole)
+                    await asyncio.sleep(5)
+                
+            algemadoRole = discord.utils.get(guild.roles, name='Algemado(a)')
+            await member.add_roles(algemadoRole)
 
-        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
 
-        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
 
-        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
-        emb.add_field(name='TEMPO:', value='`30 minutos`')
+            channel = client.get_channel(831197248884703283)
+            emb = discord.Embed(
+            title = 'ALGEMADO(A)!!',
+            description = f'{member.mention} foi algemado(a) e levado(a) para a DELEGACIA.',
+            colour = 16715320)
 
-        
-        await channel.send(embed = emb)
-        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
-        """ await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}') """
-        await member.add_roles(mutedRole, reason=reason)
-        await asyncio.sleep(1800)
-        await channel.send(f'{member.mention} você está solto(a) agora!')
-        await member.remove_roles(mutedRole)
+            emb.set_thumbnail(url=member.avatar_url)
 
-@client.command(description='Mutes the specified user.')
-@commands.has_permissions(manage_messages=True)
-async def mute1(ctx, member: discord.Member, *, reason=None):
+            rodar = random.randint(1, 4)
+            if rodar == 1:
+                emb.set_image(url='https://cdn.discordapp.com/attachments/843496086089629716/843496179802177587/algemado.gif')
+            elif rodar == 2:
+                emb.set_image(url='https://cdn.discordapp.com/attachments/843496086089629716/843496182147710986/algemado.jpg')
+            elif rodar == 3:
+                emb.set_image(url='https://cdn.discordapp.com/attachments/843496086089629716/843496187398062160/algemado3.gif')
+            elif rodar == 4:
+                emb.set_image(url='https://cdn.discordapp.com/attachments/843496086089629716/843496196700897320/algemado4.gif')
+
+            await channel.send(embed = emb)
+            conn.commit()
+            await asyncio.sleep(10)
+            delegacia = client.get_channel(840310645731360828)
+            await delegacia.send(f'{member.mention} aguarde seu julgamento!')
+
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+    cur.close()
+    conn.close()
+
+
+@client.command()
+async def liberar(ctx, member: discord.Member):
     channel = ctx.channel
     if channel.name == 'punições-comandos':
-        guild = ctx.guild
-        mutedRole = discord.utils.get(guild.roles, name='Presidiário')
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
 
-        if not mutedRole:
-            mutedRole = await guild.create_role(name='Presidiário')
+        cur.execute("SELECT algemado FROM cadeia WHERE iduser=%s", (member.id, ))
+        algemado = cur.fetchone()
+        cur.execute("SELECT preso FROM cadeia WHERE iduser=%s", (member.id, ))
+        preso = cur.fetchone()
 
-            for channel in guild.channels:
-                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+        if preso[0] == 1:
+            await ctx.send(f'{ctx.author.mention}, esse membro está preso! Para soltar ele da cadeia use `!soltar [user id]`')
+        if algemado[0] == 0:
+            await ctx.send(f'{ctx.author.mention}, esse membro não está algemado!')
 
-        
-        channel = client.get_channel(831197248884703283)
-        emb = discord.Embed(
-        title = 'PRESO(A)!!',
-        description = f'{member.mention} foi algemado(a) e levado(a) para a prisão.',
-        colour = 16715320
-    )
+        elif preso[0] == 0 and algemado[0] == 1:
+            cur.execute("SELECT artes, camp, rpg, verify FROM cadeia WHERE iduser=%s", (member.id, ))
+            cargos = cur.fetchall()
+            await ctx.send(f'{ctx.author.mention} está **LIBERANDO** {member.name}... (Isso pode demorar até 30 segundos)')
+            guild = ctx.guild
+            artRole = discord.utils.get(guild.roles, name='Artes')
+            campRole = discord.utils.get(guild.roles, name='Camponês')
+            rpgRole = discord.utils.get(guild.roles, name='RPG')
+            verifyRole = discord.utils.get(guild.roles, name='verificado')
 
-        emb.set_author(name='BMO',
-        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+            if cargos[0][0] == 1:
+                await member.add_roles(artRole)
+                await asyncio.sleep(5)
+            if cargos[0][1] == 1:
+                await member.add_roles(campRole)
+                await asyncio.sleep(5)
+            if cargos[0][2] == 1:
+                await member.add_roles(rpgRole)
+                await asyncio.sleep(5)
+            if cargos[0][3] == 1:
+                await member.add_roles(verifyRole)
+                await asyncio.sleep(5)
+            algemadoRole = discord.utils.get(guild.roles, name='Algemado(a)')
+            await member.remove_roles(algemadoRole)
+            cur.execute("UPDATE cadeia SET algemado=0 WHERE iduser=%s", (member.id, ))
+            conn.commit()
+            channel = client.get_channel(831197248884703283)
+            emb = discord.Embed(
+            title = 'LIBERADO(A)!!',
+            description = f'''
+{member.mention} foi liberado(a) da DELEGACIA.
 
-        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
 
-        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+**Leia as regras para evitar futuras punições!!**
+''',
+            colour = 16715320)
 
-        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
-        emb.add_field(name='TEMPO:', value='`1 hora`')
+            emb.set_thumbnail(url=member.avatar_url)
+            emb.set_image(url='https://cdn.discordapp.com/attachments/843496086089629716/843516145038655498/liberado.gif')
+           
+            await channel.send(embed = emb)
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+    cur.close()
+    conn.close()
 
-        
-        await channel.send(embed = emb)
-        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
-        """ await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}') """
-        await member.add_roles(mutedRole, reason=reason)
-        await asyncio.sleep(3600)
-        await channel.send(f'{member.mention} você está solto(a) agora!')
-        await member.remove_roles(mutedRole)
 
-@client.command(description='Mutes the specified user.')
-@commands.has_permissions(manage_messages=True)
-async def mute2(ctx, member: discord.Member, *, reason=None):
+@client.command()
+async def prender(ctx, member: discord.Member, *, reason=None):
     channel = ctx.channel
     if channel.name == 'punições-comandos':
-        guild = ctx.guild
-        mutedRole = discord.utils.get(guild.roles, name='Presidiário')
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
 
-        if not mutedRole:
-            mutedRole = await guild.create_role(name='Presidiário')
+        cur.execute("SELECT algemado FROM cadeia WHERE iduser=%s", (member.id, ))
+        algemado = cur.fetchone()
+        cur.execute("SELECT preso FROM cadeia WHERE iduser=%s", (member.id, ))
+        preso = cur.fetchone()
 
-            for channel in guild.channels:
-                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+        if preso[0] == 1:
+            await ctx.send(f'{ctx.author.mention}, esse membro já está preso!!')
+        if algemado[0] == 0:
+            await ctx.send(f'{ctx.author.mention}, esse membro não está algemado!!')
 
-        
-        channel = client.get_channel(831197248884703283)
-        emb = discord.Embed(
-        title = 'PRESO(A)!!',
-        description = f'{member.mention} foi algemado(a) e levado(a) para a prisão.',
-        colour = 16715320
-    )
+        if preso[0] == 0 and algemado[0] == 1:
+            guild = ctx.guild
+            presoRole = discord.utils.get(guild.roles, name='Presidiário(a)')
+            await member.add_roles(presoRole)
+            cur.execute("UPDATE cadeia SET preso=1 WHERE iduser=%s", (member.id, ))
 
-        emb.set_author(name='BMO',
-        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
+            channel = client.get_channel(831197248884703283)
+            emb = discord.Embed(
+            title = 'PRESO(A)!!',
+            description = f'{member.mention} foi levado para a **CADEIA**.',
+            colour = 16715320)
 
-        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
+            emb.add_field(name='Motivo:', value=f'{reason}', inline=True)
+            emb.set_thumbnail(url=member.avatar_url)
+            emb.set_image(url='https://cdn.discordapp.com/attachments/843496086089629716/843544028079194172/preso2.gif')
+            
 
-        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
+            await channel.send(embed = emb)
+            conn.commit()
 
-        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
-        emb.add_field(name='TEMPO:', value='`2 horas`')
+    else:
+        await ctx.send('Canal errado, bobinho(a)!')
+    cur.close()
+    conn.close()
 
-        
-        await channel.send(embed = emb)
-        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
-        """ await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}') """
-        await member.add_roles(mutedRole, reason=reason)
-        await asyncio.sleep(7200)
-        await channel.send(f'{member.mention} você está solto(a) agora!')
-        await member.remove_roles(mutedRole)
 
-@client.command(description='Mutes the specified user.')
-@commands.has_permissions(manage_messages=True)
-async def mute3(ctx, member: discord.Member, *, reason=None):
+@client.command()
+async def soltar(ctx, member: discord.Member):
     channel = ctx.channel
     if channel.name == 'punições-comandos':
-        guild = ctx.guild
-        mutedRole = discord.utils.get(guild.roles, name='Presidiário')
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
 
-        if not mutedRole:
-            mutedRole = await guild.create_role(name='Presidiário')
+        cur.execute("SELECT preso FROM cadeia WHERE iduser=%s", (member.id, ))
+        preso = cur.fetchone()
 
-            for channel in guild.channels:
-                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
+        if preso[0] == 0:
+            await ctx.send(f'{ctx.author.mention}, esse membro não está preso!!')
+        if preso[0] == 1:
+            cur.execute("UPDATE cadeia SET preso=0 WHERE iduser=%s", (member.id, ))
+            guild = ctx.guild
+            presoRole = discord.utils.get(guild.roles, name='Presidiário(a)')
+            await member.remove_roles(presoRole)
+            await ctx.send(f'{member.name} foi solto e levado para a DELEGACIA. Use o comando `!liberar [user id]` para liberar ele da delegacia.')
+            conn.commit()
 
-        
-        channel = client.get_channel(831197248884703283)
-        emb = discord.Embed(
-        title = 'PRESO(A)!!',
-        description = f'{member.mention} foi algemado(a) e levado(a) para a prisão.',
-        colour = 16715320
-    )
-
-        emb.set_author(name='BMO',
-        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
-
-        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
-
-        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
-
-        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
-        emb.add_field(name='TEMPO:', value='`3 horas`')
-
-        
-        await channel.send(embed = emb)
-        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
-        """ await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}') """
-        await member.add_roles(mutedRole, reason=reason)
-        await asyncio.sleep(10800)
-        await channel.send(f'{member.mention} você está solto(a) agora!')
-        await member.remove_roles(mutedRole)
-
-@client.command(description='Mutes the specified user.')
-@commands.has_permissions(manage_messages=True)
-async def mute10(ctx, member: discord.Member, *, reason=None):
-    channel = ctx.channel
-    if channel.name == 'punições-comandos':
-        guild = ctx.guild
-        mutedRole = discord.utils.get(guild.roles, name='Presidiário')
-
-        if not mutedRole:
-            mutedRole = await guild.create_role(name='Presidiário')
-
-            for channel in guild.channels:
-                await channel.set_permissions(mutedRole, speak=False, send_messages=False, read_message_history=True, read_messages=True)
-
-        
-        channel = client.get_channel(831197248884703283)
-        emb = discord.Embed(
-        title = 'PRESO(A)!!',
-        description = f'{member.mention} foi algemado(a) e levado(a) para a prisão.',
-        colour = 16715320
-    )
-
-        emb.set_author(name='BMO',
-        icon_url='https://cdn.discordapp.com/attachments/831946320200728577/836261314837741619/bmopng.png')
-
-        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/831946320200728577/836260807682686982/bimo.png')
-
-        """ emb.set_image(url='https://media1.tenor.com/images/029763582b4705fa973c47e72ce8e9f5/tenor.gif?itemid=17302394') """
-
-        emb.add_field(name='MOTIVO:', value=f'`{reason}`', inline=True)
-        emb.add_field(name='TEMPO:', value='`10 horas`')
-
-        
-        await channel.send(embed = emb)
-        """ await ctx.send(f'{member.mention} foi silenciado por {reason}') """
-        """ await member.send(f'Você foi silenciado(a) no {guild.name} por {reason}') """
-        await member.add_roles(mutedRole, reason=reason)
-        await asyncio.sleep(36000)
-        await channel.send(f'{member.mention} você está solto(a) agora!')
-        await member.remove_roles(mutedRole)
-
-
-
-
-@client.command(description='Unmutes a specified user.')
-@commands.has_permissions(manage_messages=True)
-async def unmute(ctx, member: discord.Member):
-    mutedRole = discord.utils.get(ctx.guild.roles, name='Presidiário')
-
-    channel = client.get_channel(831197248884703283)
-    await member.remove_roles(mutedRole)
-    await channel.send(f'{member.mention} você está solto(a) agora.')
-    #await member.send(f'You were unmuted in the server {ctx.guild.name}')
-
-
-
-
+    else:
+            await ctx.send('Canal errado, bobinho(a)!')
+    cur.close()
+    conn.close()
 
 
 
