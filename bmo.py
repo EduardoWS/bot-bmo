@@ -7,7 +7,7 @@ import json
 import os
 import asyncio
 import psycopg2 as db
-
+import wikipedia
 
 
 if os.path.exists(os.getcwd() + "/config.json"):
@@ -36,7 +36,7 @@ client.remove_command('help')
 async def on_ready():
     print('BMO está ON !!!')
 
-    await client.change_presence(activity=discord.Game(name='os outros pela janela'))
+    await client.change_presence(activity=discord.Game(name='a Loritta pela janela'))
 
 @client.command()
 @commands.has_permissions(administrator=True)
@@ -577,7 +577,7 @@ Você comprou `1000 sementes de algodão-doce`
                 cur.execute("UPDATE fazenda SET s_ad=%s WHERE iduser=%s AND loteid='A'", (totals, ctx.author.id))
                 cur.execute("UPDATE bank SET cookies=%s WHERE iduser=%s", (totald, ctx.author.id))
                 await ctx.send(f'''{ctx.author.mention}, compra realizada com sucesso!!
-Você comprou `1000 sementes de algodão-doce`
+Você comprou `1500 sementes de algodão-doce`
                 ''')
                 conn.commit()
             else:
@@ -1065,7 +1065,7 @@ async def myfarm(ctx):
                     colheitaB = insec + datetime.timedelta(hours=8)
                     plantaB = 'Jujubas plantadas'
                 elif plantedidB[0] == 'ad':
-                    colheitaB = insec + datetime.timedelta(hours=12)
+                    colheitaB = insecB + datetime.timedelta(hours=12)
                     plantaB = 'Algodão-doce plantado'
                 elif plantedidB[0] == 'm':
                     colheitaB = insec + datetime.timedelta(hours=24)
@@ -1337,7 +1337,7 @@ async def myfarm(ctx):
                     colheitaB = insec + datetime.timedelta(hours=8)
                     plantaB = 'Jujubas plantadas'
                 elif plantedidB[0] == 'ad':
-                    colheitaB = insec + datetime.timedelta(hours=12)
+                    colheitaB = insecB + datetime.timedelta(hours=12)
                     plantaB = 'Algodão-doce plantado'
                 elif plantedidB[0] == 'm':
                     colheitaB = insec + datetime.timedelta(hours=24)
@@ -1509,7 +1509,7 @@ async def myfarm(ctx):
                         colheitaC = insec + datetime.timedelta(hours=12)
                         plantaC = 'Algodão-doce plantado'
                     elif plantedidC[0] == 'm':
-                        colheitaC = insec + datetime.timedelta(hours=24)
+                        colheitaC = insecC + datetime.timedelta(hours=24)
                         plantaC = 'Marshmallow plantado'
 
                     resultA = colheita - datetime.datetime.now()
@@ -1608,7 +1608,7 @@ async def myfarm(ctx):
                         colheitaC = insec + datetime.timedelta(hours=12)
                         plantaC = 'Algodão-doce plantado'
                     elif plantedidC[0] == 'm':
-                        colheitaC = insec + datetime.timedelta(hours=24)
+                        colheitaC = insecC + datetime.timedelta(hours=24)
                         plantaC = 'Marshmallow plantado'
 
                     resultB = colheita - datetime.datetime.now()
@@ -1716,7 +1716,7 @@ async def myfarm(ctx):
                         colheitaB = insec + datetime.timedelta(hours=8)
                         plantaB = 'Jujubas plantadas'
                     elif plantedidB[0] == 'ad':
-                        colheitaB = insec + datetime.timedelta(hours=12)
+                        colheitaB = insecB + datetime.timedelta(hours=12)
                         plantaB = 'Algodão-doce plantado'
                     elif plantedidB[0] == 'm':
                         colheitaB = insec + datetime.timedelta(hours=24)
@@ -1732,7 +1732,7 @@ async def myfarm(ctx):
                         colheitaC = insec + datetime.timedelta(hours=12)
                         plantaC = 'Algodão-doce plantado'
                     elif plantedidC[0] == 'm':
-                        colheitaC = insec + datetime.timedelta(hours=24)
+                        colheitaC = insecC + datetime.timedelta(hours=24)
                         plantaC = 'Marshmallow plantado'
 
                     resultA = colheita - datetime.datetime.now()
@@ -3307,7 +3307,7 @@ VALOR GASTO: `{preço[0]} cookies`
                 conn.commit()
 
         elif da[0] < preço[0]:
-            await ctx.send(f'{ctx.author.send}, você não tem cookies suficientes para comprar essa obra!')
+            await ctx.send(f'{ctx.author.mention}, você não tem cookies suficientes para comprar essa obra!')
 
 
 
@@ -3350,11 +3350,11 @@ async def nobreza(ctx):
                     check = '▣'
                 cur.execute("SELECT loteid FROM fazenda WHERE iduser=%s", (ctx.author.id, ))
                 lotes = cur.fetchall()
-                if len(lotes[0]) == 1:
+                if len(lotes) == 1:
                     qntlotes = 1
-                elif len(lotes[0]) == 2:
+                elif len(lotes) == 2:
                     qntlotes = 2
-                elif len(lotes[0]) == 3:
+                elif len(lotes) == 3:
                     qntlotes = 3
                     check = '▣'
                 emb = discord.Embed(
@@ -3407,11 +3407,15 @@ Nobres têm mais chances de se tornar um membro da realeza 👑
                 cur.execute("SELECT loteid FROM fazenda WHERE iduser=%s", (ctx.author.id, ))
                 lotes = cur.fetchall()
 
-                if len(lotes[0]) == 1:
+                if len(lotes) == 1:
                     qntlotes = 1
-                elif len(lotes[0]) == 2:
+                    
+                    
+                elif len(lotes) == 2:
                     qntlotes = 2
-                elif len(lotes[0]) == 3:
+                    
+                    
+                elif len(lotes) == 3:
                     qntlotes = 3
                     d = True
                     check = '▣'
@@ -3644,6 +3648,278 @@ async def rank(ctx):
     
     cur.close()
     conn.close()
+
+# VV ====================== JOGO DA FORCA ====================== VV
+
+@client.command()
+async def forca(ctx, member1: discord.Member, member2: discord.Member=None):
+    
+    if ctx.channel.name == '🔍┃forca':
+
+        if member2 == None:
+            if ctx.author.id == member1.id:
+                await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
+                return
+            else:
+                await ctx.send(f'{member1.mention} aguarde o **{ctx.author.name}** escolher uma palavra!')
+        else:
+            if ctx.author.id == member1.id or ctx.author.id == member2.id:
+                await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
+                return
+            else:
+                await ctx.send(f'{member1.mention} e {member2.mention} aguardem o **{ctx.author.name}** escolher uma palavra!')
+        
+        escolhas = client.get_user(ctx.author.id)
+        await escolhas.send('Escolha uma palavra:')
+
+        def check(message):
+            if message.author == ctx.author and not message.guild:
+                return check 
+        try:
+            palavra = await client.wait_for('message', check=check, timeout=120)
+            palavra = palavra.content.upper()
+            await escolhas.send('Agora digite uma dica:')
+            dica = await client.wait_for('message', check=check, timeout=120)
+            dica = dica.content.upper()
+        except:
+            await escolhas.send('Tempo expirado. Coloque o comando `!forca @user` novamente no canal adequado.')
+            return
+
+        palavra_secreta = '_' * len(palavra)
+        t = ''
+        jog1 = member1
+        jog2 = member2
+        
+
+        def encaixar(tent: str, palavra: str, palavra_secreta: str) -> str:
+            palavra_lista = list(palavra_secreta)
+
+            for index, letra in enumerate(list(palavra)):
+                if letra == tent:
+                    palavra_lista[index] = tent
+            
+            palavra_secreta = "".join(palavra_lista)
+
+            return palavra_secreta
+
+
+
+
+        vez = jog1
+        vida = 5
+        spc = ''
+        cont = 0
+
+        while True:
+
+            for n in range(1, len(palavra_secreta) + 1):
+                spc += palavra_secreta[n-1] + ' '
+            
+            if vida == 5:
+                h = '\❤️\❤️\❤️\❤️\❤️'
+            elif vida == 4:
+                h = '\❤️\❤️\❤️\❤️'
+            elif vida == 3:
+                h = '\❤️\❤️\❤️'
+            elif vida == 2:
+                h = '\❤️\❤️'
+            elif vida == 1:
+                h = '\❤️'
+            emb = discord.Embed(
+            title='JOGO DA FORCA',
+            description=f'''
+DICA: `{dica}`
+
+{t}
+
+` {spc}`
+
+
+VIDAS: {h}
+
+RODADA: {vez.mention}        
+        '''
+    )
+            emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+            await ctx.send(embed=emb)
+            def check2(message):
+                
+                
+                if message.author == vez and ctx.channel == message.channel and len(message.content) == 1:
+                    return check2
+                elif message.author == vez and ctx.channel == message.channel and message.content.upper()[:6] == 'CHUTAR':
+                    return check2
+            
+            try:
+                tent = await client.wait_for('message', check=check2, timeout=45)
+                tent = tent.content.upper()
+                
+            except:
+                if cont == 1:
+                    await ctx.send(f'{vez.mention} pensou tanto que perdeu.')
+                    spc = ''
+                    for n in range(1, len(palavra) + 1):
+                        spc += palavra[n-1] + ' '
+                    emb = discord.Embed(
+                        title='FIM DE JOGO ⚰️',
+                        description=f'''
+A palavra que o(a) {ctx.author.mention} escolheu foi:
+
+` {spc}`
+
+**USE `!forca @user` PARA COMEÇAR OUTRO JOGO**
+                    '''
+                )
+                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                    await ctx.send(embed=emb)
+                    break
+
+
+                if member2 == None:
+                    await ctx.send(f'{vez.mention} pensou demais e perdeu 1 \❤️!')
+                    spc = ''
+                    vida -= 1
+                    cont += 1
+                    continue
+                elif member2 != None:
+                    await ctx.send(f'{vez.mention} pensou demais e perdeu a vez e 1 \❤️!')
+                    spc = ''
+                    vida -= 1
+                    cont += 1
+                    if vez == jog1:
+                        vez = jog2
+                    else:
+                        vez = jog1
+                    continue
+                
+            if tent[:6] == 'CHUTAR':
+                if tent[7:] == palavra:
+                    
+                    spc = ''
+                    for n in range(1, len(palavra) + 1):
+                        spc += palavra[n-1] + ' '
+                    emb = discord.Embed(
+                        title='TEMOS UM GANHADOR!!',
+                        description=f'''
+**PARABÉNS {vez.mention} !!**
+
+` {spc}`
+
+VIDAS: {h}
+                '''
+            )
+                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                    await ctx.send(embed=emb)
+                    break
+                else:
+                    spc = ''
+                    for n in range(1, len(palavra) + 1):
+                        spc += palavra[n-1] + ' '
+                    emb = discord.Embed(
+                        title='FIM DE JOGO ⚰️',
+                        description=f'''
+A palavra que o(a) {ctx.author.mention} escolheu foi:
+
+` {spc}`
+
+Lembre-se que se errar o chute você perde!!
+
+**USE `!forca @user` PARA COMEÇAR OUTRO JOGO**
+                '''
+                )
+                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                    await ctx.send(embed=emb)
+                    break
+
+
+
+            if tent in t and tent != '':
+                await ctx.send(f'{vez.mention} já tentaram essa letra!!')
+                if vez == jog1 and member2 != None:
+                    vez = jog2
+                else:
+                    vez = jog1
+            else:
+                t += tent + ' '
+                
+
+
+
+            if tent in palavra:
+                palavra_secreta = encaixar(tent, palavra, palavra_secreta)
+
+
+            else:
+                vida -= 1
+                if vida == 0:
+                    spc = ''
+                    for n in range(1, len(palavra) + 1):
+                        spc += palavra[n-1] + ' '
+                    emb = discord.Embed(
+                        title='FIM DE JOGO ⚰️',
+                        description=f'''
+A palavra que o(a) {ctx.author.mention} escolheu foi:
+
+` {spc}`
+
+**USE `!forca @user` PARA COMEÇAR OUTRO JOGO**
+                    '''
+                )
+                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                    await ctx.send(embed=emb)
+                    break
+
+
+
+
+            if palavra_secreta == palavra:
+                spc = ''
+                for n in range(1, len(palavra_secreta) + 1):
+                    spc += palavra_secreta[n-1] + ' '
+                emb = discord.Embed(
+                    title='TEMOS UM GANHADOR!!',
+                    description=f'''
+**PARABÉNS {vez.mention} !!**
+
+` {spc}`
+
+VIDAS: {h}
+                '''
+            )
+                emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                await ctx.send(embed=emb)
+                break
+
+            if vez == jog1 and member2 != None:
+                vez = jog2
+            else:
+                vez = jog1
+            spc = ''
+    else:
+        await ctx.send('Canal errado bobinho(a)')
+
+
+# VV ====================== WIKIPEDIA ====================== VV
+
+@client.command(aliases=['pesquisar', 'search'])
+async def p(ctx, *, search):
+    
+    wikipedia.set_lang('pt')
+    try:
+        pesquisa = wikipedia.summary(search)
+        if len(pesquisa) > 2000:
+
+            loc = pesquisa[:2000].rfind('.')
+            await ctx.send(pesquisa[:loc+1])
+                
+        else:
+            await ctx.send(pesquisa)
+           
+    except:
+        await ctx.send('Não consegui encontrar o que digitou. \nTalvez isso não tenha na wikipedia.')
+
+
+
 
 
 # VV ====================== COMANDOS EXCLUSIVOS DA CATEGORIA RPG ====================== VV
@@ -4684,4 +4960,4 @@ async def soltar(ctx, member: discord.Member):
 
 
 
-client.run('TOKEN')
+client.run('')
