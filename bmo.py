@@ -10,6 +10,7 @@ import psycopg2 as db
 import wikipedia
 
 
+
 if os.path.exists(os.getcwd() + "/config.json"):
     with open("./config.json") as f:
         configData = json.load(f)
@@ -49,12 +50,6 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandOnCooldown):
         msg = '**Vai com Calma!!** \nVocê poderá usar esse comando de novo em `{:.2f}s`' .format(error.retry_after)
         await ctx.send(msg)
-
-
-
-
-
-
 
 
 
@@ -3652,82 +3647,122 @@ async def rank(ctx):
 # VV ====================== JOGO DA FORCA ====================== VV
 
 @client.command()
-async def forca(ctx, member1: discord.Member, member2: discord.Member=None):
+async def mudarid(ctx, idf):
+    if ctx.channel.name == 'teste':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        cur.execute("UPDATE idforca SET id = %s", (idf, ))
+        conn.commit()
+        cur.close()
+        conn.close()
+        await ctx.send(f'ID mudado para {idf}!!')
+
+
+
+@client.command()
+async def forca(ctx, member1: discord.Member, member2: discord.Member=None, member3: discord.Member=None):
     
     if ctx.channel.name == '🔍┃forca':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM idforca")
+        ressultado_id = cur.fetchone()
 
-        if member2 == None:
-            if ctx.author.id == member1.id:
-                await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
+        if ressultado_id[0] == 0:
+            if member2 == None:
+                if ctx.author.id == member1.id:
+                    await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
+                    return
+                else:
+                    cur.execute("UPDATE idforca SET id = 1")
+                    conn.commit()
+                    await ctx.send(f'{member1.mention} aguarde o **{ctx.author.name}** escolher uma palavra!')
+            elif member2 != None and member3 == None:
+                if ctx.author.id == member1.id or ctx.author.id == member2.id:
+                    await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
+                    return
+                else:
+                    cur.execute("UPDATE idforca SET id = 1")
+                    conn.commit()
+                    await ctx.send(f'{member1.mention} e {member2.mention} aguardem o **{ctx.author.name}** escolher uma palavra!')
+            elif member3 != None:
+                if ctx.author.id == member1.id or ctx.author.id == member2.id or ctx.author.id == member3.id:
+                    await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
+                    return
+                else:
+                    cur.execute("UPDATE idforca SET id = 1")
+                    conn.commit()
+                    await ctx.send(f'{member1.mention}, {member2.mention} e {member3.mention} aguardem o **{ctx.author.name}** escolher uma palavra!')
+
+            escolhas = client.get_user(ctx.author.id)
+            await escolhas.send('Escolha uma palavra:')
+
+            def check(message):
+                if message.author == ctx.author and not message.guild:
+                    return check 
+            try:
+                palavra = await client.wait_for('message', check=check, timeout=180)
+                palavra = palavra.content.upper()
+                await escolhas.send('Agora digite uma dica:')
+                dica = await client.wait_for('message', check=check, timeout=180)
+                dica = dica.content.upper()
+                
+            except:
+                cur.execute("UPDATE idforca SET id = 0")
+                conn.commit()
+                await escolhas.send('Tempo expirado. Coloque o comando `!forca @user` novamente no canal adequado.')
                 return
-            else:
-                await ctx.send(f'{member1.mention} aguarde o **{ctx.author.name}** escolher uma palavra!')
-        else:
-            if ctx.author.id == member1.id or ctx.author.id == member2.id:
-                await ctx.send(f'Você não pode jogar com você mesmo, seu solitário.')
-                return
-            else:
-                await ctx.send(f'{member1.mention} e {member2.mention} aguardem o **{ctx.author.name}** escolher uma palavra!')
-        
-        escolhas = client.get_user(ctx.author.id)
-        await escolhas.send('Escolha uma palavra:')
-
-        def check(message):
-            if message.author == ctx.author and not message.guild:
-                return check 
-        try:
-            palavra = await client.wait_for('message', check=check, timeout=120)
-            palavra = palavra.content.upper()
-            await escolhas.send('Agora digite uma dica:')
-            dica = await client.wait_for('message', check=check, timeout=120)
-            dica = dica.content.upper()
-        except:
-            await escolhas.send('Tempo expirado. Coloque o comando `!forca @user` novamente no canal adequado.')
-            return
-
-        palavra_secreta = '_' * len(palavra)
-        t = ''
-        jog1 = member1
-        jog2 = member2
-        
-
-        def encaixar(tent: str, palavra: str, palavra_secreta: str) -> str:
-            palavra_lista = list(palavra_secreta)
-
-            for index, letra in enumerate(list(palavra)):
-                if letra == tent:
-                    palavra_lista[index] = tent
             
-            palavra_secreta = "".join(palavra_lista)
-
-            return palavra_secreta
-
-
-
-
-        vez = jog1
-        vida = 5
-        spc = ''
-        cont = 0
-
-        while True:
-
-            for n in range(1, len(palavra_secreta) + 1):
-                spc += palavra_secreta[n-1] + ' '
             
-            if vida == 5:
-                h = '\❤️\❤️\❤️\❤️\❤️'
-            elif vida == 4:
-                h = '\❤️\❤️\❤️\❤️'
-            elif vida == 3:
-                h = '\❤️\❤️\❤️'
-            elif vida == 2:
-                h = '\❤️\❤️'
-            elif vida == 1:
-                h = '\❤️'
-            emb = discord.Embed(
-            title='JOGO DA FORCA',
-            description=f'''
+            
+            cur.execute("INSERT INTO forca (palavra, dica) VALUES (%s, %s)", (palavra, dica))
+            conn.commit()
+            
+            
+            
+            palavra_secreta = '_' * len(palavra)
+            t = ''
+            jog1 = member1
+            jog2 = member2
+            jog3 = member3
+
+            def encaixar(tent: str, palavra: str, palavra_secreta: str) -> str:
+                palavra_lista = list(palavra_secreta)
+
+                for index, letra in enumerate(list(palavra)):
+                    if letra == tent:
+                        palavra_lista[index] = tent
+                
+                palavra_secreta = "".join(palavra_lista)
+
+                return palavra_secreta
+
+
+
+
+            vez = jog1
+            vida = 5
+            spc = ''
+            cont = 0
+
+            while True:
+
+                for n in range(1, len(palavra_secreta) + 1):
+                    spc += palavra_secreta[n-1] + ' '
+                
+                if vida == 5:
+                    h = '\❤️\❤️\❤️\❤️\❤️'
+                elif vida == 4:
+                    h = '\❤️\❤️\❤️\❤️'
+                elif vida == 3:
+                    h = '\❤️\❤️\❤️'
+                elif vida == 2:
+                    h = '\❤️\❤️'
+                elif vida == 1:
+                    h = '\❤️'
+                emb = discord.Embed(
+                title='JOGO DA FORCA',
+                description=f'''
 DICA: `{dica}`
 
 {t}
@@ -3738,86 +3773,103 @@ DICA: `{dica}`
 VIDAS: {h}
 
 RODADA: {vez.mention}        
-        '''
-    )
-            emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
-            await ctx.send(embed=emb)
-            def check2(message):
+            '''
+        )
+                emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                await ctx.send(embed=emb)
+                def check2(message):
+                    
+                    
+                    if message.author == vez and ctx.channel == message.channel and len(message.content) == 1:
+                        return check2
+                    elif message.author == vez and ctx.channel == message.channel and message.content.upper()[:6] == 'CHUTAR':
+                        return check2
                 
-                
-                if message.author == vez and ctx.channel == message.channel and len(message.content) == 1:
-                    return check2
-                elif message.author == vez and ctx.channel == message.channel and message.content.upper()[:6] == 'CHUTAR':
-                    return check2
-            
-            try:
-                tent = await client.wait_for('message', check=check2, timeout=45)
-                tent = tent.content.upper()
-                
-            except:
-                if cont == 1:
-                    await ctx.send(f'{vez.mention} pensou tanto que perdeu.')
-                    spc = ''
-                    for n in range(1, len(palavra) + 1):
-                        spc += palavra[n-1] + ' '
-                    emb = discord.Embed(
-                        title='FIM DE JOGO ⚰️',
-                        description=f'''
+                try:
+                    tent = await client.wait_for('message', check=check2, timeout=60)
+                    tent = tent.content.upper()
+                    
+                except:
+                    if cont == 1 or vida == 1:
+                        await ctx.send(f'{vez.mention} pensou tanto que perdeu.')
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='FIM DE JOGO ⚰️',
+                            description=f'''
 A palavra que o(a) {ctx.author.mention} escolheu foi:
 
 ` {spc}`
 
 **USE `!forca @user` PARA COMEÇAR OUTRO JOGO**
-                    '''
-                )
-                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
-                    await ctx.send(embed=emb)
-                    break
+                        '''
+                    )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
 
-
-                if member2 == None:
-                    await ctx.send(f'{vez.mention} pensou demais e perdeu 1 \❤️!')
-                    spc = ''
-                    vida -= 1
-                    cont += 1
-                    continue
-                elif member2 != None:
-                    await ctx.send(f'{vez.mention} pensou demais e perdeu a vez e 1 \❤️!')
-                    spc = ''
-                    vida -= 1
-                    cont += 1
-                    if vez == jog1:
-                        vez = jog2
                     else:
-                        vez = jog1
-                    continue
-                
-            if tent[:6] == 'CHUTAR':
-                if tent[7:] == palavra:
-                    
-                    spc = ''
-                    for n in range(1, len(palavra) + 1):
-                        spc += palavra[n-1] + ' '
-                    emb = discord.Embed(
-                        title='TEMOS UM GANHADOR!!',
-                        description=f'''
+                        if member2 == None:
+                            await ctx.send(f'{vez.mention} pensou demais e perdeu 1 \❤️!')
+                            spc = ''
+                            vida -= 1
+                            cont += 1
+                            continue
+                        elif member2 != None and member3 == None:
+                            await ctx.send(f'{vez.mention} pensou demais e perdeu a vez e 1 \❤️!')
+                            spc = ''
+                            vida -= 1
+                            cont += 1
+                            if vez == jog1:
+                                vez = jog2
+                            else:
+                                vez = jog1
+                            continue
+                        elif member3 != None:
+                            await ctx.send(f'{vez.mention} pensou demais e perdeu a vez e 1 \❤️!')
+                            spc = ''
+                            vida -= 1
+                            cont += 1
+                            if vez == jog1:
+                                vez = jog2
+                            elif vez == jog2:
+                                vez = jog3
+                            elif vez == jog3:
+                                vez = jog1
+                            continue
+
+
+                if tent[:6] == 'CHUTAR':
+                    if tent[7:] == palavra:
+                        
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='🎉 TEMOS UM GANHADOR 🎉',
+                            description=f'''
 **PARABÉNS {vez.mention} !!**
 
 ` {spc}`
 
 VIDAS: {h}
-                '''
-            )
-                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
-                    await ctx.send(embed=emb)
-                    break
-                else:
-                    spc = ''
-                    for n in range(1, len(palavra) + 1):
-                        spc += palavra[n-1] + ' '
-                    emb = discord.Embed(
-                        title='FIM DE JOGO ⚰️',
-                        description=f'''
+                    '''
+                )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
+                    else:
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='FIM DE JOGO ⚰️',
+                            description=f'''
 A palavra que o(a) {ctx.author.mention} escolheu foi:
 
 ` {spc}`
@@ -3825,79 +3877,340 @@ A palavra que o(a) {ctx.author.mention} escolheu foi:
 Lembre-se que se errar o chute você perde!!
 
 **USE `!forca @user` PARA COMEÇAR OUTRO JOGO**
-                '''
-                )
-                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
-                    await ctx.send(embed=emb)
-                    break
+                    '''
+                    )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
 
 
 
-            if tent in t and tent != '':
-                await ctx.send(f'{vez.mention} já tentaram essa letra!!')
-                if vez == jog1 and member2 != None:
-                    vez = jog2
-                else:
-                    vez = jog1
-            else:
-                t += tent + ' '
-                
-
-
-
-            if tent in palavra:
-                palavra_secreta = encaixar(tent, palavra, palavra_secreta)
-
-
-            else:
-                vida -= 1
-                if vida == 0:
+                if tent in t and tent != '':
+                    await ctx.send(f'{vez.mention} já tentaram essa letra!!')
+                    if member2 != None and member3 == None:
+                        if vez == jog1:
+                            vez = jog2
+                        else:
+                            vez = jog1
+                    elif member3 != None:
+                        if vez == jog1:
+                            vez = jog2
+                        elif vez == jog2:
+                            vez = jog3
+                        elif vez == jog3:
+                            vez = jog1
                     spc = ''
-                    for n in range(1, len(palavra) + 1):
-                        spc += palavra[n-1] + ' '
-                    emb = discord.Embed(
-                        title='FIM DE JOGO ⚰️',
-                        description=f'''
+                    continue
+                    
+                else:
+                    t += tent + ' '
+                    
+
+
+
+                if tent in palavra:
+                    palavra_secreta = encaixar(tent, palavra, palavra_secreta)
+
+
+                else:
+                    vida -= 1
+                    if vida == 0:
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='FIM DE JOGO ⚰️',
+                            description=f'''
 A palavra que o(a) {ctx.author.mention} escolheu foi:
 
 ` {spc}`
 
 **USE `!forca @user` PARA COMEÇAR OUTRO JOGO**
-                    '''
-                )
-                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
-                    await ctx.send(embed=emb)
-                    break
+                        '''
+                    )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
 
 
 
 
-            if palavra_secreta == palavra:
-                spc = ''
-                for n in range(1, len(palavra_secreta) + 1):
-                    spc += palavra_secreta[n-1] + ' '
-                emb = discord.Embed(
-                    title='TEMOS UM GANHADOR!!',
-                    description=f'''
+                if palavra_secreta == palavra:
+                    spc = ''
+                    for n in range(1, len(palavra_secreta) + 1):
+                        spc += palavra_secreta[n-1] + ' '
+                    emb = discord.Embed(
+                        title='🎉 TEMOS UM GANHADOR 🎉',
+                        description=f'''
 **PARABÉNS {vez.mention} !!**
 
 ` {spc}`
 
 VIDAS: {h}
-                '''
-            )
+                    '''
+                )
+                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                    await ctx.send(embed=emb)
+                    cur.execute("UPDATE idforca SET id = 0")
+                    conn.commit()
+                    break
+
+                if member2 != None and member3 == None:
+                    if vez == jog1:
+                        vez = jog2
+                    else:
+                        vez = jog1
+                elif member3 != None:
+                    if vez == jog1:
+                        vez = jog2
+                    elif vez == jog2:
+                        vez = jog3
+                    elif vez == jog3:
+                        vez = jog1
+
+                spc = ''
+                cont = 0
+
+        else:
+            await ctx.send(f'{ctx.author.mention} já estão jogando comigo! Por favor, aguarde o jogo terminar.')
+    else:
+        await ctx.send('Canal errado bobinho(a)')
+    cur.close()
+    conn.close()
+
+
+@client.command()
+async def fs(ctx):
+    if ctx.channel.name == '🔍┃forca':
+        conn = db.connect(dbname=db_name, user=db_user, host=db_host, password=db_pass)
+        cur = conn.cursor()
+
+        cur.execute("SELECT id FROM idforca")
+        ressultado_id = cur.fetchone()
+        
+        if ressultado_id[0] == 0:
+
+            cur.execute("SELECT * FROM forca ORDER BY random() LIMIT 1")
+            resultado = cur.fetchall()
+
+            palavra = resultado[0][0].upper()
+            dica = resultado[0][1].upper()
+
+            palavra_secreta = '_' * len(palavra)
+            t = ''
+
+            cur.execute("UPDATE idforca SET id = 1")
+            conn.commit()
+
+            def encaixar(tent: str, palavra: str, palavra_secreta: str) -> str:
+                palavra_lista = list(palavra_secreta)
+
+                for index, letra in enumerate(list(palavra)):
+                    if letra == tent:
+                        palavra_lista[index] = tent
+                
+                palavra_secreta = "".join(palavra_lista)
+
+                return palavra_secreta
+
+            vida = 5
+            spc = ''
+            cont = 0
+
+            while True:
+
+                for n in range(1, len(palavra_secreta) + 1):
+                    spc += palavra_secreta[n-1] + ' '
+                
+                if vida == 5:
+                    h = '\❤️\❤️\❤️\❤️\❤️'
+                elif vida == 4:
+                    h = '\❤️\❤️\❤️\❤️'
+                elif vida == 3:
+                    h = '\❤️\❤️\❤️'
+                elif vida == 2:
+                    h = '\❤️\❤️'
+                elif vida == 1:
+                    h = '\❤️'
+                emb = discord.Embed(
+                title='JOGO DA FORCA SINGLEPLAYER',
+                description=f'''
+DICA: `{dica}`
+
+{t}
+
+` {spc}`
+
+
+VIDAS: {h}
+
+JOGADOR: {ctx.author.mention}
+        
+            '''
+        )
                 emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
                 await ctx.send(embed=emb)
-                break
+                def check2(message):
+                    
+                    
+                    if message.author == ctx.author and ctx.channel == message.channel and len(message.content) == 1:
+                        return check2
+                    elif message.author == ctx.author and ctx.channel == message.channel and message.content.upper()[:6] == 'CHUTAR':
+                        return check2
+                
+                try:
+                    tent = await client.wait_for('message', check=check2, timeout=60)
+                    tent = tent.content.upper()
+                    
+                except:
+                    if cont == 1 or vida == 1:
+                        await ctx.send(f'{ctx.author.mention} pensou tanto que perdeu.')
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='FIM DE JOGO ⚰️',
+                            description=f'''
+A palavra que o BMO escolheu foi:
 
-            if vez == jog1 and member2 != None:
-                vez = jog2
-            else:
-                vez = jog1
-            spc = ''
+` {spc}`
+
+**USE `!fs` PARA COMEÇAR OUTRO JOGO**
+                        '''
+                    )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
+
+
+                    else:
+                        await ctx.send(f'{ctx.author.mention} pensou demais e perdeu 1 \❤️!')
+                        spc = ''
+                        vida -= 1
+                        cont += 1
+                        continue
+                    
+                    
+                if tent[:6] == 'CHUTAR':
+                    if tent[7:] == palavra:
+                        
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='🎉 TEMOS UM GANHADOR 🎉',
+                            description=f'''
+**PARABÉNS {ctx.author.mention} !!**
+
+` {spc}`
+
+VIDAS: {h}
+                    '''
+                )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
+                    else:
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='FIM DE JOGO ⚰️',
+                            description=f'''
+A palavra que o BMO escolheu foi:
+
+` {spc}`
+
+Lembre-se que se errar o chute você perde!!
+
+**USE `!fs` PARA COMEÇAR OUTRO JOGO**
+                    '''
+                    )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
+
+
+
+                if tent in t and tent != '':
+                    await ctx.send(f'{ctx.author.mention} você já tentou essa letra!!')
+                    
+                else:
+                    t += tent + ' '
+                    
+
+
+
+                if tent in palavra:
+                    palavra_secreta = encaixar(tent, palavra, palavra_secreta)
+
+
+                else:
+                    vida -= 1
+                    if vida == 0:
+                        spc = ''
+                        for n in range(1, len(palavra) + 1):
+                            spc += palavra[n-1] + ' '
+                        emb = discord.Embed(
+                            title='FIM DE JOGO ⚰️',
+                            description=f'''
+A palavra que o BMO escolheu foi:
+
+` {spc}`
+
+**USE `!fs` PARA COMEÇAR OUTRO JOGO**
+                        '''
+                    )
+                        emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                        await ctx.send(embed=emb)
+                        cur.execute("UPDATE idforca SET id = 0")
+                        conn.commit()
+                        break
+
+
+
+
+                if palavra_secreta == palavra:
+                    spc = ''
+                    for n in range(1, len(palavra_secreta) + 1):
+                        spc += palavra_secreta[n-1] + ' '
+                    emb = discord.Embed(
+                        title='🎉 TEMOS UM GANHADOR 🎉',
+                        description=f'''
+**PARABÉNS {ctx.author.mention} !!**
+
+` {spc}`
+
+VIDAS: {h}
+                    '''
+                )
+                    emb.set_thumbnail(url='https://cdn.discordapp.com/attachments/843496086089629716/863886769882923009/hangman-game-og-share.png')
+                    await ctx.send(embed=emb)
+                    cur.execute("UPDATE idforca SET id = 0")
+                    conn.commit()
+                    break
+
+                spc = ''
+                cont = 0
+
+        else:
+            await ctx.send(f'{ctx.author.mention} já estão jogando comigo! Por favor, aguarde o jogo terminar.')
+
     else:
         await ctx.send('Canal errado bobinho(a)')
 
+    cur.close()
+    conn.close()
 
 # VV ====================== WIKIPEDIA ====================== VV
 
@@ -3917,7 +4230,6 @@ async def p(ctx, *, search):
            
     except:
         await ctx.send('Não consegui encontrar o que digitou. \nTalvez isso não tenha na wikipedia.')
-
 
 
 
