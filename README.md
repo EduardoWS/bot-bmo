@@ -1,2 +1,2 @@
 # bot-bmo
-bot do meu antigo servidor do Discord (foi aposentado)
+Um dos meus primeiros bots.
